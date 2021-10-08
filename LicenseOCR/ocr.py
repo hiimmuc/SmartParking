@@ -15,14 +15,14 @@ class OCR_engine():
 
         results = self.engine.readtext(image)  # bbox, text, prob
         text_str = ''
-        
+
         for i, res in enumerate(results):
             text_str += (' ' + res[1])
-            
+
         return text_str
 
 
 if __name__ == '__main__':
-    path = r'LicenseOCR\test image\bien-so-xe-may.jpg'
+    path = r'LicenseOCR\test image\xem-tra-bien-so-xe-e1563508757390.jpg'
     engine = OCR_engine()
     print(engine.read(path))
