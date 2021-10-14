@@ -1,20 +1,24 @@
-import pytesseract
 import cv2
-from recognizer_utility import load_model, detect_lp, im2single
 import numpy as np
+import pytesseract
+
+from recognizer_utility import detect_lp, im2single, load_model
 
 pytesseract.pytesseract.tesseract_cmd = r'D:\Python\Tesseract-OCR\tesseract.exe'
 
 # Dinh nghia cac ky tu tren bien so
-char_list =  '0123456789ABCDEFGHKLMNPRSTUVXYZ'
+char_list = '0123456789ABCDEFGHKLMNPRSTUVXYZ'
 
 # Ham fine tune bien so, loai bo cac ki tu khong hop ly
+
+
 def fine_tune(lp):
     newString = ""
     for i in range(len(lp)):
         if lp[i] in char_list:
             newString += lp[i]
     return newString
+
 
 # Đường dẫn ảnh, các bạn đổi tên file tại đây để thử nhé
 img_path = r"D:\Python\Pycharm\Number Plate Project\yolo_plate_dataset\CarLongPlate200.jpg"
@@ -35,7 +39,7 @@ ratio = float(max(Ivehicle.shape[:2])) / min(Ivehicle.shape[:2])
 side = int(ratio * Dmin)
 bound_dim = min(side, Dmax)
 
-_ , LpImg, lp_type = detect_lp(wpod_net, im2single(Ivehicle), bound_dim, lp_threshold=0.5)
+_, LpImg, lp_type = detect_lp(wpod_net, im2single(Ivehicle), bound_dim, lp_threshold=0.5)
 
 
 if (len(LpImg)):
@@ -63,7 +67,7 @@ if (len(LpImg)):
 
     # Viet bien so len anh
     black_img = np.zeros((LpImg[0].shape[0], LpImg[0].shape[1], 3), dtype="uint8")
-    cv2.putText(black_img,fine_tune(text),(50, 50), cv2.FONT_HERSHEY_PLAIN, 3.0, (255, 255, 255), lineType=cv2.LINE_AA)
+    cv2.putText(black_img, fine_tune(text), (50, 50), cv2.FONT_HERSHEY_PLAIN, 3.0, (255, 255, 255), lineType=cv2.LINE_AA)
 
     # Hien thi anh va luu anh ra file output.png
     cv2.imshow("Anh input", Ivehicle)
