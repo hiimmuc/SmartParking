@@ -130,11 +130,11 @@ def preprocess_image(image, pad=True):
 
     if pad:
         image = padding(thresh)
-        # dil = dilate(thresh)
-        # erode_img = erode(dil)
     else:
         image = thresh
-    image = opening(image)
+    # image = opening(image)
+    image = dilate(image)
+    image = erode(image)
 
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     return rgb

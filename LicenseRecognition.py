@@ -1,9 +1,6 @@
-import sys
 import time
 
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
 
 from LicenseDetection.Yolo_LP import *
 from LicenseOCR.ocr import *
