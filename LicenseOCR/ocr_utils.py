@@ -120,6 +120,15 @@ def padding(image):
     return image_padding
 
 
+def super_resolution(model_name, zoom, image):
+    sr = cv2.dnn_superres.DnnSuperResImpl_create()
+    path = f"{model_name}_x{zoom}.pb"
+    sr.readModel(path)
+    sr.setModel(model_name, zoom)
+    result = sr.upsample(image)
+    return result
+
+
 def preprocess_image(image, pad=True):
 
     deskew_img = deskew(image)
@@ -132,9 +141,8 @@ def preprocess_image(image, pad=True):
         image = padding(thresh)
     else:
         image = thresh
-    # image = opening(image)
-    image = dilate(image)
-    image = erode(image)
+    image = opening(image)
 
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    # rgb = super_resolution("ESPCN", 2, rgb)
     return rgb

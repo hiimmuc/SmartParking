@@ -21,12 +21,13 @@ class LicenseRecognizer:
         if isinstance(image, str):
             print(image)
             image = cv2.imread(image)
+            print(image.shape)
         if not only_ocr:
             t2 = time.time()
-            plates = self.yolo_engine.detect(image, show=True, crop_scale=0.025)
+            plates = self.yolo_engine.detect(image, show=False, crop_scale=0.025)
             print("Detect time:", time.time() - t2)
 
-            f, axarr = plt.subplots(1, 2)
+            _, axarr = plt.subplots(1, 2)
 
             for plate in plates:
                 axarr[0].imshow(plate)

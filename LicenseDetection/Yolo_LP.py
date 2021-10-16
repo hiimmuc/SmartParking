@@ -77,7 +77,9 @@ class YOLO:
             x, y, w, h = box
             results.append(img[y:y+h, x:x+w])
 
-        results = [cv2.resize(img_crop, (hT, wT), interpolation=cv2.INTER_CUBIC) for img_crop in results]
+        scale = max([max(hT//results[i].shape[0], wT//results[i].shape[1]) for i in range(len(results))])
+
+        results = [cv2.resize(img_crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC) for img_crop in results]
 
         return results
 

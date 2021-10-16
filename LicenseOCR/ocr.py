@@ -26,7 +26,7 @@ class OCR():
         for i, res in enumerate(results):
             text_str += (' ' + res[1])
 
-        return text_str if not return_confidence else (text_str, confidence)
+        return text_str.strip() if not return_confidence else (text_str.strip(), confidence)
 
 
 if __name__ == '__main__':
