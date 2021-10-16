@@ -29,9 +29,11 @@ class YOLO:
         with open(self.name, 'rt') as f:
             self.classNames = f.read().rstrip('n').split('\n')
 
-    def findObjects(self, outputs, img, show=False):
+    def findObjects(self, outputs, img, show=False, scale=True, crop_scale=0.1):
         hT, wT, _ = img.shape
-        bbox = []
+
+        results = []
+        bboxes = []
         classIds = []
         confs = []
 
@@ -41,31 +43,45 @@ class YOLO:
                 classId = np.argmax(scores)
                 confidence = scores[classId]
                 if confidence > self.confThreshold:
-                    w, h = int(det[2] * wT), int(det[3] * hT)
-                    x, y = int((det[0] * wT) - w / 2), int((det[1] * hT) - h / 2)
-                    bbox.append([x, y, w, h])
+                    center_x, center_y, width, height = list(map(int, det[0:4] * np.array([wT, hT, wT, hT])))
+                    top_left_x = int(center_x - (width / 2))
+                    top_left_y = int(center_y - (height / 2))
+
+                    bboxes.append([top_left_x, top_left_y, width, height])
                     classIds.append(classId)
                     confs.append(float(confidence))
 
-        indices = cv2.dnn.NMSBoxes(bbox, confs, self.confThreshold, self.nmsThreshold)
+        indices = cv2.dnn.NMSBoxes(bboxes, confs, self.confThreshold, self.nmsThreshold)
         self.n_frame.append(indices)
 
-        if show:
-            for i in indices:
-                i = i[0]
-                box = bbox[i]
-                x, y, w, h = box[0], box[1], box[2], box[3]
+        if scale:
+            expand_bboxes = []
+            for i in indices.flatten():
+                x, y, w, h = bboxes[i]
+                x = abs(int(x - crop_scale * w))
+                y = abs(int(y - crop_scale * h))
+                w = abs(int((1 + 2 * crop_scale) * w))
+                h = abs(int((1 + 2 * crop_scale) * h))
 
+                expand_bboxes.append([x, y, w, h])
+            bboxes = expand_bboxes
+
+        if show:
+            for i in indices.flatten():
+                x, y, w, h = expand_bboxes[i]
                 cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
                 cv2.putText(img, f'{self.classNames[0].upper()} {int(confs[i] * 100)}%',
                             (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
-        img_crop = img[y:y+h, x:x+w]
-        results = cv2.resize(img_crop, (hT, wT), interpolation=cv2.INTER_CUBIC)
+        for box in bboxes:
+            x, y, w, h = box
+            results.append(img[y:y+h, x:x+w])
+
+        results = [cv2.resize(img_crop, (hT, wT), interpolation=cv2.INTER_CUBIC) for img_crop in results]
 
         return results
 
-    def yolo_LP(self, img):
+    def detect(self, img, show=False, scale=True, crop_scale=0.1):
         if isinstance(img, str):
             img = cv2.imread(img)
 
@@ -75,7 +91,7 @@ class YOLO:
         layersNames = self.net.getLayerNames()
         outputNames = [(layersNames[i[0] - 1]) for i in self.net.getUnconnectedOutLayers()]
         outputs = self.net.forward(outputNames)
-        img_crop = self.findObjects(outputs, img)
+        img_crop = self.findObjects(outputs, img, show=show, scale=scale, crop_scale=crop_scale)
 
         return img_crop
 

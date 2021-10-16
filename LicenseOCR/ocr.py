@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 
 
-class OCR_engine():
+class OCR():
     def __init__(self):
         self.engine = easyocr.Reader(['en', 'vi'])
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     assert isinstance(img, np.ndarray)
 
     t0 = time.time()
-    engine = OCR_engine()
+    engine = OCR()
     print('Initialize model time:', time.time() - t0)
 
     t = time.time()

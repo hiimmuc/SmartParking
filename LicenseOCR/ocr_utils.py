@@ -50,14 +50,17 @@ def canny(image):
 
 
 def deskew(image):
-    # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    gray = get_grayscale(image)
+
     gray = cv2.bitwise_not(image)
+
     thresh = cv2.threshold(gray, 0, 255,
                            cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 
     coords = np.column_stack(np.where(thresh > 0))
     angle = cv2.minAreaRect(coords)[-1]
-    if angle < -45:
+    if angle < -15:
         angle = -(90 + angle)
     else:
         angle = 0
@@ -74,12 +77,62 @@ def match_template(image, template):
     return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
 
-def preprocess(image):
-    gray = get_grayscale(image)
+def padding(image_bw):
+    # Padding
+    h, w = image_bw.shape
+    pad_size = int(abs(h - w) / 2)
+    pad_extra = abs(h - w) % 2
+    image_padding = np.array([])
+    if h > w:
+        image_padding = cv2.copyMakeBorder(image_bw,
+                                           0,
+                                           0,
+                                           pad_size + pad_extra,
+                                           pad_size,
+                                           cv2.BORDER_CONSTANT,
+                                           value=[0, 0, 0])
+        image_padding = cv2.copyMakeBorder(image_padding,
+                                           5,
+                                           5,
+                                           5,
+                                           5,
+                                           cv2.BORDER_CONSTANT,
+                                           value=[0, 0, 0])
+    elif w > h:
+        image_padding = cv2.copyMakeBorder(image_bw,
+                                           pad_size + pad_extra,
+                                           pad_size,
+                                           0,
+                                           0,
+                                           cv2.BORDER_CONSTANT,
+                                           value=[0, 0, 0])
+        image_padding = cv2.copyMakeBorder(image_padding,
+                                           5,
+                                           5,
+                                           5,
+                                           5,
+                                           cv2.BORDER_CONSTANT,
+                                           value=[0, 0, 0])
+    else:
+        image_padding = image_bw
+
+    return image_padding
+
+
+def preprocess_image(image, pad=True):
+
+    deskew_img = deskew(image)
+
+    gray = get_grayscale(deskew_img)
     gray = remove_noise(gray)
     thresh = thresholding(gray)
-    dil = dilate(thresh)
-    erode_img = erode(dil)
-    deskew_img = deskew(erode_img)
-    rgb = cv2.cvtColor(deskew_img, cv2.COLOR_GRAY2RGB)
+    image_bw = cv2.bitwise_not(thresh)
+
+    if pad:
+        image = padding(image_bw)
+        # dil = dilate(thresh)
+        # erode_img = erode(dil)
+    image = opening(image)
+
+    rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     return rgb
