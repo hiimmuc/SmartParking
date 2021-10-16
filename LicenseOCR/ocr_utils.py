@@ -17,7 +17,7 @@ def remove_noise(image):
 
 
 def thresholding(image):
-    return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    return cv2.threshold(image, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 
 # dilation
 
@@ -37,7 +37,7 @@ def erode(image):
 
 
 def opening(image):
-    kernel = np.ones((5, 5), np.uint8)
+    kernel = np.ones((3, 3), np.uint8)
     return cv2.morphologyEx(image, cv2.MORPH_OPEN, kernel)
 
 # canny edge detection
@@ -53,10 +53,10 @@ def deskew(image):
 
     gray = get_grayscale(image)
 
-    gray = cv2.bitwise_not(image)
+    gray = cv2.bitwise_not(gray)
 
-    thresh = cv2.threshold(gray, 0, 255,
-                           cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+    _, thresh = cv2.threshold(gray, 120, 255,
+                              cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     coords = np.column_stack(np.where(thresh > 0))
     angle = cv2.minAreaRect(coords)[-1]
@@ -77,8 +77,9 @@ def match_template(image, template):
     return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED)
 
 
-def padding(image_bw):
+def padding(image):
     # Padding
+    image_bw = cv2.bitwise_not(image)
     h, w = image_bw.shape
     pad_size = int(abs(h - w) / 2)
     pad_extra = abs(h - w) % 2
@@ -126,12 +127,13 @@ def preprocess_image(image, pad=True):
     gray = get_grayscale(deskew_img)
     gray = remove_noise(gray)
     thresh = thresholding(gray)
-    image_bw = cv2.bitwise_not(thresh)
 
     if pad:
-        image = padding(image_bw)
+        image = padding(thresh)
         # dil = dilate(thresh)
         # erode_img = erode(dil)
+    else:
+        image = thresh
     image = opening(image)
 
     rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)

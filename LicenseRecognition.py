@@ -20,26 +20,31 @@ class LicenseRecognizer:
         self.ocr_engine = OCR()
         print("Load OCR model time:", time.time() - t1)
 
-    def extract_info(self, image, show=True, preprocess=False):
+    def extract_info(self, image, only_ocr=False, show=True, preprocess=False):
         if isinstance(image, str):
+            print(image)
             image = cv2.imread(image)
-        t2 = time.time()
-        plates = self.yolo_engine.detect(image, show=True, crop_scale=0.12)
-        print("Detect time:", time.time() - t2)
+        if not only_ocr:
+            t2 = time.time()
+            plates = self.yolo_engine.detect(image, show=True, crop_scale=0.025)
+            print("Detect time:", time.time() - t2)
 
-        f, axarr = plt.subplots(1, 2)
+            f, axarr = plt.subplots(1, 2)
 
-        for plate in plates:
-            axarr[0].imshow(plate)
+            for plate in plates:
+                axarr[0].imshow(plate)
 
-            if preprocess:
-                plate = preprocess_image(plate)
-                axarr[1].imshow(plate)
-            # ocr
+                if preprocess:
+                    plate = preprocess_image(plate, pad=False)
+                    axarr[1].imshow(plate)
+                # ocr
+                t3 = time.time()
+                print(self.ocr_engine.read(plate, 'cv2', return_confidence=True), "\nPredict time:", time.time() - t3)
+            if show:
+                plt.show()
+        else:
             t3 = time.time()
-            print(self.ocr_engine.read(plate, 'cv2', return_confidence=True), "\nPredict time:", time.time() - t3)
-        if show:
-            plt.show()
+            print(self.ocr_engine.read(image, 'cv2', return_confidence=True), "\nPredict time:", time.time() - t3)
 
     def video_detect(self, video_path, show=True, preprocess=False):
         pass
