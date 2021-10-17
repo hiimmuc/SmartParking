@@ -21,7 +21,6 @@ class LicenseRecognizer:
         if isinstance(image, str):
             print(image)
             image = cv2.imread(image)
-            print(image.shape)
         if not only_ocr:
             t2 = time.time()
             plates = self.yolo_engine.detect(image, show=False, crop_scale=0.025)
@@ -34,15 +33,20 @@ class LicenseRecognizer:
 
                 if preprocess:
                     plate = preprocess_image(plate, pad=False)
-                    axarr[1].imshow(plate)
+                    axarr[1].imshow(plate, cmap='gray')
+
                 # ocr
                 t3 = time.time()
-                print(self.ocr_engine.read(plate, 'cv2', return_confidence=True), "\nPredict time:", time.time() - t3)
+                text, conf = self.ocr_engine.read(image, 'cv2', return_confidence=True)
+                print(text, conf, time.time() - t3)
             if show:
                 plt.show()
+
         else:
             t3 = time.time()
-            print(self.ocr_engine.read(image, 'cv2', return_confidence=True), "\nPredict time:", time.time() - t3)
+            text, conf = self.ocr_engine.read(image, 'cv2', return_confidence=True)
+            print(text, conf, time.time() - t3)
+        # TODO: return plates, text based on confidence of text
 
     def video_detect(self, video_path, show=True, preprocess=False):
         pass

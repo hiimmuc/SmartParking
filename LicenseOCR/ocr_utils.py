@@ -143,6 +143,6 @@ def preprocess_image(image, pad=True):
         image = thresh
     image = opening(image)
 
-    rgb = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+    image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
     # rgb = super_resolution("ESPCN", 2, rgb)
-    return rgb
+    return image

@@ -25,7 +25,7 @@ def model():
     num = random.randint(0, 2489)
     image_name = "xemay" + str(num) + ".jpg"
     # img_path = os.path.join(r"backup\Number Plate Dataset\yolo_plate_dataset", image_name)
-    img_path = r"backup\Number Plate Dataset\yolo_plate_dataset\xemay1434.jpg"
+    img_path = r"backup\Number Plate Dataset\yolo_plate_dataset\xemay1432.jpg"
 
     recognizer = LicenseRecognizer()
     recognizer.extract_info(img_path, only_ocr=False, preprocess=True)

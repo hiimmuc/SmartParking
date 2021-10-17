@@ -26,7 +26,8 @@ class OCR():
         for i, res in enumerate(results):
             text_str += (' ' + res[1])
 
-        return text_str.strip() if not return_confidence else (text_str.strip(), confidence)
+        plate_id = text_str.strip().replace('.', '-')
+        return plate_id if not return_confidence else (plate_id, confidence)
 
 
 if __name__ == '__main__':
