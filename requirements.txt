@@ -1,0 +1,13 @@
+PyQt5
+numpy
+pandas
+opencv-python
+imutils
+matplotlib
+Pillow
+serial
+pyserial
+keras
+easyocr
+pytesseract
+EasyModbus

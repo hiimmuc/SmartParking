@@ -7,6 +7,14 @@ from LicenseOCR.ocr import *
 from LicenseOCR.ocr_utils import *
 
 
+def remove_noiss_characters(text):
+    noise = ['.', "'", '"', ";", ":", ",", "!", "?", "*", "&", "^", "%", "$", "#", "@", "~", "`", "|", "\\", "/", "(", ")", "{", "}", "[", "]"]
+    for char in text:
+        if char in noise:
+            text = text.replace(char, "")
+    return text
+
+
 class LicenseRecognizer:
     def __init__(self):
         super().__init__()
@@ -17,36 +25,44 @@ class LicenseRecognizer:
         self.ocr_engine = OCR()
         print("Load OCR model time:", time.time() - t1)
 
-    def extract_info(self, image, only_ocr=False, show=True, preprocess=False):
+    def extract_info(self, image, detection=True, ocr=True, show=True, preprocess=False):
         if isinstance(image, str):
             print(image)
             image = cv2.imread(image)
-        if not only_ocr:
+
+        read_img = image.copy()
+        text = ''
+        conf = 0
+        plate = None
+
+        if detection:
             t2 = time.time()
-            plates = self.yolo_engine.detect(image, show=False, crop_scale=0.025)
+            plate = self.yolo_engine.detect(image, show=False, crop_scale=0.05)
             print("Detect time:", time.time() - t2)
 
-            _, axarr = plt.subplots(1, 2)
+            assert len(plate) == 1, "More than one license plate detected!"
+            read_img = plate[0]
 
-            for plate in plates:
-                axarr[0].imshow(plate)
+        _, axarr = plt.subplots(1, 2)
 
-                if preprocess:
-                    plate = preprocess_image(plate, pad=False)
-                    axarr[1].imshow(plate, cmap='gray')
+        if ocr:
 
-                # ocr
-                t3 = time.time()
-                text, conf = self.ocr_engine.read(image, 'cv2', return_confidence=True)
-                print(text, conf, time.time() - t3)
+            axarr[0].imshow(read_img)
+
+            if preprocess:
+                read_img = preprocess_image(read_img, pad=False)
+                axarr[1].imshow(read_img, cmap='gray')
+
+            # ocr
+            t3 = time.time()
+            text, conf = self.ocr_engine.read(read_img, 'cv2', return_confidence=True)
+            text = remove_noiss_characters(text)
+            print(text, conf, time.time() - t3, 's')
+
             if show:
                 plt.show()
 
-        else:
-            t3 = time.time()
-            text, conf = self.ocr_engine.read(image, 'cv2', return_confidence=True)
-            print(text, conf, time.time() - t3)
-        # TODO: return plates, text based on confidence of text
+        return read_img, text, conf
 
     def video_detect(self, video_path, show=True, preprocess=False):
         pass

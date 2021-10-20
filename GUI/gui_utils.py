@@ -16,20 +16,69 @@ from PyQt5.QtWidgets import (QDialog, QDialogButtonBox, QFileDialog, QLabel,
 try:
     from GUI.gui import *
     from GUI.gui_thread import *
-except:
+except Exception:
     from gui import *
     from gui_thread import *
 
+import mouse
+
+ID_BOX = (300, 640)
+AFFIRM_BUTTON = (600, 640)
+
+
+def convert_cv2qt(cv_img):
+    '''Convert cv image to qt image to display on gui
+
+    Args:
+        cv_img (ndarray): BGR image
+
+    Returns:
+        image: RGB image with qt format
+    '''
+    rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+    h, w, ch = rgb_image.shape
+    bytes_per_line = ch * w
+    convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+    p = convert_to_Qt_format.scaled(640, 360, Qt.KeepAspectRatio)
+    return QPixmap.fromImage(p)
+
+
+def control_mouse(x, y, click='', click_mode='single'):
+    # move mouse to x,y and do click
+    mouse.move(x, y)
+    if click_mode == 'single':
+        if click == 'left':
+            mouse.click(button='left')
+        elif click == 'right':
+            mouse.click(button='right')
+        elif click == 'middle':
+            mouse.click(button='middle')
+    elif click_mode == 'double':
+        if click == 'left':
+            mouse.double_click(button='left')
+        elif click == 'right':
+            mouse.double_click(button='right')
+        elif click == 'middle':
+            mouse.double_click(button='middle')
+
 
 class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
-    def __init__(self, MainWindow) -> None:
+    def __init__(self, MainWindow, rs485, model) -> None:
         super().__init__()
         self.setupUi(MainWindow)
 
+        self.model = model
+        self.rs485_pipe = rs485
+        self.rs485_pipe.check_connection()
+        self.rs485_connected = self.rs485_pipe.connected_to_plc
+
         self.uart_connected = False
-        self.rs485_connected = False
+        self.detect_flag = True
+
         self.is_error = False
         self.running = False
+        self.current_slot_num = 0
+        self.max_slots = 0
 
         self.thread = VideoThread()
         # create the video capture thread
@@ -39,9 +88,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
         self.startButton.clicked.connect(self.start_program)
         self.stopButton.clicked.connect(self.stop_program)
+        self.confirmButton.clicked.connect(self.get_id_input)
 
         # timer for reading step
         self.timer = QtCore.QTimer()
+        # self.timer.timeout.connect(self.delay_ms)
 
         # Table
         self.table = {'account': {},
@@ -50,6 +101,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
     def start_program(self):
         self.thread.start()
+        self.program_pipeline()
         self.running = True
 
     def stop_program(self):
@@ -84,22 +136,6 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
     # +++++++++++++++++++++++++++++++++++ Camera view handling ++++++++++++++++++++++++++++++++++++++++
 
-    def convert_cv2qt(self, cv_img):
-        '''Convert cv image to qt image to display on gui
-
-        Args:
-            cv_img (ndarray): BGR image
-
-        Returns:
-            image: RGB image with qt format
-        '''
-        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-        h, w, ch = rgb_image.shape
-        bytes_per_line = ch * w
-        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-        p = convert_to_Qt_format.scaled(640, 360, Qt.KeepAspectRatio)
-        return QPixmap.fromImage(p)
-
     @pyqtSlot(np.ndarray, list)
     def camera_screen(self, cv_img):
         '''continuous update camera screen using thread
@@ -107,7 +143,9 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         Args:
             cv_img (ndarray): BGR image
         '''
-        qt_img = self.convert_cv2qt(cv_img)
+        self.current_frame = cv_img
+
+        qt_img = convert_cv2qt(self.current_frame)
         self.screen.setPixmap(qt_img)
 
     def update_extracted_image(self, screen, cv_img):
@@ -116,14 +154,24 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         Args:
             screen ([str]): which screen to update in or out
         '''
-        qt_img = self.convert_cv2qt(cv_img)
+        qt_img = convert_cv2qt(cv_img)
         if screen == 'view_in':
             self.ViewPlateIn.setPixmap(qt_img)
         elif screen == 'view_out':
             self.ViewPlateOut.setPixmap(qt_img)
-        pass
+
+    # +++++++++++++++++++++++++++++++++++ License detection handling ++++++++++++++++++++++++++++++++++++++++
+    def is_detected_plate(self):
+        if self.detect_flag:
+            self.current_plates, self.current_plate_ids, _ = self.model.extract_info(self.current_frame, detect_only=True, show=False, preprocess=True)
+
+            if len(self.current_plates) > 0:
+                return True
+            else:
+                return False
 
     # +++++++++++++++++++++++++++++++++++ PLC tracking table handling ++++++++++++++++++++++++++++++++++++++++
+
     def check_if_expand(self, table_name):
         try:
             table = self.tableWidget
@@ -137,11 +185,45 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         except Exception as e:
             self.popup_msg(e, src_msg='check_if_expanding', type_msg='error')
 
-    def update_table(self):
-        pass
+    def tracking_plc_table(self, mode='init'):
+        try:
+            table_name = 'plc'
+            table = self.tableWidget
+            if mode != 'init':
+                # reset table
+                nrows = table.rowCount()
+                table.setVerticalHeaderLabels(tuple(["newRow"] * nrows))  # set name
+                table.clearContents()
 
-    def init_table(self):
-        pass
+            self.read_csv(table_name)
+            self.check_if_expand(table_name)
+            table = self.tableWidget
+            # update table
+            for i in range(len(self.table[table_name]['name'])):
+                table.setVerticalHeaderItem(i, QTableWidgetItem(self.table[table_name]['name'][i]))
+                table.setItem(i, 0, QTableWidgetItem(self.table[table_name]['type'][i]))
+            print('-> Tracking PLC table')
+        except Exception as e:
+            self.popup_msg(e, src_msg='tracking_plc_table', type_msg='error')
+
+    def update_tracking_plc_table(self):
+        """Read data from PLC and update the tracking table widget in UI widget.
+        """
+        try:
+            if self.rs485_connected:
+                table_name = 'plc'
+                table = self.tableWidget
+                # read value from plc and update tracking values
+                for i in range(len(self.table[table_name]['name'])):
+                    address = int(self.table[table_name]['address'][i])
+                    type_ = self.table[table_name]['type'][i]
+                    values = self.rs485_pipe.read(type_, address)
+
+                    table.setItem(i, 1, QTableWidgetItem(f"{values}"))
+            else:
+                self.popup_msg("Com is not connect", src_msg='update_tracking_table', type_msg='warning')
+        except Exception as e:
+            self.popup_msg(e, src_msg='update_tracking_table')
 
     # +++++++++++++++++++++++++++++++++++ CSV files handling ++++++++++++++++++++++++++++++++++++++++
 
@@ -161,6 +243,10 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             elif table_name == 'database':
                 self.table[table_name]['id'] = list(data['id'])
                 self.table[table_name]['money_left'] = list(data['money_left'])
+            elif table_name == 'plc':
+                self.table[table_name]['name'] = list(data['name'])
+                self.table[table_name]['type'] = list(data['type'])
+                self.table[table_name]['address'] = list(data['address'])
             print(f'[INFO] Read {table_name} table from csv')
         except Exception as e:
             self.popup_msg(f'Error: {e}', 'read_csv', 'error')
@@ -177,28 +263,42 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             df.to_csv(csv_path, index=False)
         except Exception as e:
             self.popup_msg(f'Error: {e}', 'write_csv', 'error')
+
+    def init_all_table(self):
+        self.read_csv('account')
+        self.read_csv('database')
+        self.read_csv('plc')
     # +++++++++++++++++++++++++++++++++++ ID part handling ++++++++++++++++++++++++++++++++++++++++
 
     # track slot in park and money in account after that display on screen
+    def get_id_input(self):
+        text = self.InputID.text()
+        if len(text) > 0:
+            self.currentID = text
+            self.InputID.clear()
 
     # +++++++++++++++++++++++++++++++++++ Utils function ++++++++++++++++++++++++++++++++++++++++++
 
-    def update_lcd_led(self, lcd, value):
+    def update_lcd_led(self, lcd='', value=0, mode='default'):
         '''Change number in lcd display to value
 
         Args:
             lcd (str): name of lcd
             value (int): Value to display
         '''
-        if lcd == 'TotalSlot':
-            lcd_box = self.TotalSlot
-        elif lcd == 'MoneyLeft':
-            lcd_box = self.MoneyLeft
-        elif lcd == 'SlotCount':
-            lcd_box = self.SlotCount
-        elif lcd == 'IDcard':
-            lcd_box = self.IDcard
-        lcd_box.display(str(int(value)))
+        lcd_box = {'TotalSlot': self.TotalSlot,
+                   'MoneyLeft': self.MoneyLeft,
+                   'SlotCount': self.SlotCount}
+        if lcd in lcd_box.keys():
+            lcd_box[lcd].display(str(int(value)))
+        else:
+            mode = 'reset'
+            print(f'[ERROR] LCD {lcd} not found')
+
+        if mode == 'reset':
+            lcd_box['MoneyLeft'].display(0)
+            lcd_box['SlotCount'].display(self.current_slot_num)
+            lcd_box['TotalSlot'].display(self.max_slots)
 
     def update_label(self, label, value):
         '''Change text of label box (only plate number)
@@ -223,6 +323,83 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         elif label == 'Verify':
             self.VerifyBox.setStyleSheet(f"background-color: {color}")
         pass
+
+    def delay(self, seconds):
+        '''delay'''
+        ms = int(seconds * 1000)
+        self.timer.singleShot(ms, self.dummy_clock)
+
+    def dummy_clock(self):
+        '''do nothing, just to delay
+        '''
+        pass
+
+    def park_control(self, method):
+        '''
+        '''
+        if method == 'pay':
+            # tru tien tai khoan
+            # cap nhat self.MoneyLeft toi so du hien tai
+            pass
+        elif method == 'open left':
+            # mo cong vao
+            self.SlotCount += 1
+            pass
+        elif method == 'open right':
+            # mo cong ra
+            self.SlotCount -= 1
+            pass
+    # +++++++++++++++++++++++++++++++++++ start ++++++++++++++++++++++++++++++++++++++++++
+
+    def program_pipeline(self):
+        try:
+            self.init_all_table()
+            if self.is_detected_plate():
+                self.detect_flag = False
+                #  read database if exits plot
+                plates = self.current_plates
+                plate_ids = self.current_plate_ids
+
+                # Xe di ra khoi khu vuc
+                if plate_ids in self.table['database']['id']:
+                    idx = self.table['database']['id'].index(plate_ids)
+                    plate_path = self.table['database']['plate_path'][idx]
+                    plate_img = cv2.imread(plate_path)
+                    self.update_extracted_image('view_in', plate_img)
+                    self.update_label('extractedInfo', f"{plate_ids}")
+                    self.update_extracted_image('view_in', plates[0])
+                    self.update_color_led_label('Verify', 'green')
+                    self.update_color_led_label('ledTrigger', 'red')
+                    self.get_id_input()  # NOTE: lap lai den khi lay dc id
+                    self.park_control('pay')
+                    self.park_control('open right')
+                    self.update_lcd_led('Money')
+                    self.update_lcd_led('SlotCount')
+                    # xoa khoi database
+                    self.delay(3)
+                    self.update_lcd_led(mode='reset')
+
+                else:
+                    # Xe di vao khu vuc
+                    self.update_extracted_image('view_in', plates[0])
+                    self.update_label('extractedInfo', f"{plate_ids}")
+                    self.update_color_led_label('Verify', 'red')
+                    self.update_color_led_label('ledTrigger', 'green')
+                    self.get_id_input()  # NOTE: lap lai den khi lay dc id
+                    self.park_control('open left')
+                    # them vao database
+                    self.update_lcd_led('Money')
+                    self.update_lcd_led('SlotCount')
+
+                self.detect_flag = True
+            else:
+                # khong co xe
+                self.update_color_led_label('Verify', 'white')
+                self.update_color_led_label('ledTrigger', 'white')
+
+                pass
+        except Exception as e:
+            self.popup_msg(e, 'program_pipeline', 'error')
 
 
 def run():

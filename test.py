@@ -26,11 +26,29 @@ def model():
     image_name = "xemay" + str(num) + ".jpg"
     # img_path = os.path.join(r"backup\Number Plate Dataset\yolo_plate_dataset", image_name)
     img_path = r"backup\Number Plate Dataset\yolo_plate_dataset\xemay1432.jpg"
+    img_path = r"LicenseOCR\test image\bien-so-xe-4-so-xau.jpg"
 
     recognizer = LicenseRecognizer()
-    recognizer.extract_info(img_path, only_ocr=False, preprocess=True)
+
+    recognizer.extract_info(img_path,
+                            detection=True,
+                            ocr=True,
+                            preprocess=True,
+                            show=True)
+
+    recognizer.extract_info(img_path,
+                            detection=False,
+                            ocr=True,
+                            preprocess=True,
+                            show=True)
+
+    recognizer.extract_info(img_path,
+                            detection=False,
+                            ocr=True,
+                            preprocess=False,
+                            show=True)
 
 
 if __name__ == "__main__":
-    # model()
-    gui()
+    model()
+    # gui()
