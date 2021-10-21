@@ -12,46 +12,4 @@ class Modbus:
 
 class Parking:
     max_size = 9
-
-#  stream multi camera at same time
-
-
-class camThread(threading.Thread):
-    def __init__(self, previewName, camID):
-        threading.Thread.__init__(self)
-        self.previewName = previewName
-        self.camID = camID
-
-    def run(self):
-        print("Starting " + self.previewName)
-        camPreview(self.previewName, self.camID)
-
-
-def camPreview(previewName, camID):
-    cv2.namedWindow(previewName)
-    cam = cv2.VideoCapture(camID)
-    if cam.isOpened():
-        rval, frame = cam.read()
-    else:
-        rval = False
-
-    while rval:
-        cv2.imshow(previewName, frame)
-        rval, frame = cam.read()
-        key = cv2.waitKey(20)
-        if key == 27:  # exit on ESC
-            break
-    cv2.destroyWindow(previewName)
-
-
-if __name__ == '__main__':
-    # Create threads as follows
-    thread1 = camThread("Camera 1", 0)
-    thread2 = camThread("Camera 2", 1)
-    thread3 = camThread("Camera 3", 2)
-
-    thread1.start()
-    thread2.start()
-    thread3.start()
-    print()
-    print("Active threads", threading.activeCount())
+    price = 5000

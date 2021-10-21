@@ -161,14 +161,14 @@
       <rect>
        <x>250</x>
        <y>30</y>
-       <width>251</width>
+       <width>331</width>
        <height>41</height>
       </rect>
      </property>
      <property name="font">
       <font>
        <family>Segoe UI</family>
-       <pointsize>16</pointsize>
+       <pointsize>18</pointsize>
        <weight>50</weight>
        <bold>false</bold>
       </font>
@@ -181,19 +181,6 @@
      </property>
      <property name="clearButtonEnabled">
       <bool>false</bool>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="confirmButton">
-     <property name="geometry">
-      <rect>
-       <x>514</x>
-       <y>30</y>
-       <width>71</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Cofirm</string>
      </property>
     </widget>
    </widget>

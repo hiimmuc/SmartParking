@@ -5,6 +5,7 @@ from easymodbus.modbusClient import ModbusClient
 
 class RS485:
     def __init__(self, port="COM0", is_rtu=True, ip=None):
+        self.connected = False
         self.connected_to_plc = False
         self.port = port
         self.ip = ip
@@ -19,12 +20,14 @@ class RS485:
                 plc = ModbusClient(self.ip, self.port)
             self.connected_to_plc = True
             plc.close()
-        except:
+        except Exception as e:
+            print(e)
             self.connected_to_plc = False
 
     def write(self, type_, address, value):
         try:
             #  check connection
+            plc = None
             try:
                 if self.is_rtu:
                     plc = ModbusClient(f'COM{self.port}')
@@ -43,8 +46,7 @@ class RS485:
             elif type_ == 'reg':
                 plc.write_single_register(address, value)
         except Exception as e:
-            self.popup_msg(msg=e, src_msg='write_to_PLC_core', type_msg='warning')
-            self.connected = False
+            print(e)
 
     def read(self, type_, address):
         """read data from plc with type and address defined
@@ -73,4 +75,4 @@ class RS485:
             if type_.strip() == 'coil':
                 return plc.read_coils(address, 1)[0]
         except Exception as e:
-            self.popup_msg(e, src_msg='read_from_PLC')
+            print(e)

@@ -27,21 +27,20 @@ class LicenseRecognizer:
 
     def extract_info(self, image, detection=True, ocr=True, show=True, preprocess=False):
         if isinstance(image, str):
-            print(image)
-            image = cv2.imread(image)
+            image = cv2.cvtColor(cv2.imread(image), cv2.COLOR_BGR2RGB)
 
         read_img = image.copy()
         text = ''
         conf = 0
-        plate = None
+        plates = None
 
         if detection:
             t2 = time.time()
-            plate = self.yolo_engine.detect(image, show=False, crop_scale=0.05)
+            plates, _ = self.yolo_engine.detect(image, show=False, crop_scale=0.05)
             print("Detect time:", time.time() - t2)
 
-            assert len(plate) == 1, "More than one license plate detected!"
-            read_img = plate[0]
+            assert len(plates) == 1, "More than one license plate detected!"
+            read_img = plates[0]
 
         _, axarr = plt.subplots(1, 2)
 
@@ -51,7 +50,7 @@ class LicenseRecognizer:
 
             if preprocess:
                 read_img = preprocess_image(read_img, pad=False)
-                axarr[1].imshow(read_img, cmap='gray')
+                axarr[1].imshow(read_img)
 
             # ocr
             t3 = time.time()
@@ -59,8 +58,8 @@ class LicenseRecognizer:
             text = remove_noiss_characters(text)
             print(text, conf, time.time() - t3, 's')
 
-            if show:
-                plt.show()
+        if show:
+            plt.show()
 
         return read_img, text, conf
 

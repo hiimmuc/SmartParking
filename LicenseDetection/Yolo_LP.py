@@ -1,61 +1,91 @@
-import random
-import time
+from pathlib import Path
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
-from LicenseOCR.ocr import *
 
-modelConfiguration = r"backup\model\yolov4-tiny-custom.cfg"
-modelWeights = r"backup\model\yolov4-tiny-custom_best.weights"
-classesFile = r"backup\model\Number_plate.names"
+modelConfiguration = str(Path("backup/model/yolov4-tiny-custom.cfg"))
+modelWeights = str(Path("backup/model/yolov4-tiny-custom_best.weights"))
+classesFile = str(Path("backup/model/Number_plate.names"))
 
 
 class YOLO:
-    def __init__(self, model_cfg=modelConfiguration, model_weight=modelWeights, name=classesFile):
+    def __init__(self, model_cfg=modelConfiguration, model_weight=modelWeights, label=classesFile):
         super().__init__()
-        self.net = cv2.dnn.readNetFromDarknet(model_cfg, model_weight)
-        self.net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
-        self.net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
-        self.name = name
-        self.setup_param()
+        self.model_cfg = model_cfg
+        self.model_weight = model_weight
+        self.label = label
+        self.net = self.create_net()
 
-    def setup_param(self):
-        self.char_list = '0123456789ABCDEFGHKLMNPRSTUVXYZ'
-        self.whT = 320
-        self.confThreshold = 0.4
-        self.nmsThreshold = 0.6
-        self.n_frame = []
-        self.classNames = []
-        with open(self.name, 'rt') as f:
-            self.classNames = f.read().rstrip('n').split('\n')
+        self.class_names = []
+        with open(self.label, 'rt') as f:
+            self.class_names = f.read().rstrip('n').split('\n')
 
-    def findObjects(self, outputs, img, show=False, scale=True, crop_scale=0.1):
-        hT, wT, _ = img.shape
+    def create_net(self):
+        net = cv2.dnn.readNetFromDarknet(self.model_cfg, self.model_weight)
+        net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
+        net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+        print('YOLOv4 loaded successfully!')
+        return net
 
-        results = []
+    def detect(self, image,
+               confidence_threshold=0.4,
+               nms_threshold=0.6,
+               show=False,
+               crop_scale=0.1):
+        '''detect object in image
+
+        Args:
+            image (str or ndarray): path to image of rgb format or ndarray of rgb format
+            confidence_threshold (float, optional): threshold for the confidence of obj recognition. Defaults to 0.4.
+            nms_threshold (float, optional): threshold for the nms(how much bbox we accept). Defaults to 0.6.
+            show (bool, optional): Decide wether to draw bboxes on image. Defaults to False.
+            crop_scale (float, optional): Scale to enlarge the cropping area of bboxes on image. Defaults to 0.1.
+
+        Returns:
+            tuple: List of results, image, bboxes, classes, scores
+        '''
+        if isinstance(image, str):
+            image = cv2.cvtColor(cv2.imread(image), cv2.COLOR_BGR2RGB)
+
+        h, w, _ = image.shape
+
+        layer_names = self.net.getLayerNames()
+
+        output_layers = [layer_names[i[0] - 1] for i in self.net.getUnconnectedOutLayers().reshape(1, -1)]
+        blob = cv2.dnn.blobFromImage(image, 1 / 255., (416, 416), [0, 0, 0], swapRB=True, crop=False)
+
+        self.net.setInput(blob)
+        layer_outputs = self.net.forward(output_layers)
+
         bboxes = []
-        classIds = []
-        confs = []
+        confidences = []
+        class_ids = []
 
-        for output in outputs:
-            for det in output:
-                scores = det[5:]
-                classId = np.argmax(scores)
-                confidence = scores[classId]
-                if confidence > self.confThreshold:
-                    center_x, center_y, width, height = list(map(int, det[0:4] * np.array([wT, hT, wT, hT])))
+        for output in layer_outputs:
+            for detection in output:
+                scores = detection[5:]
+                class_id = np.argmax(scores)
+                confidence = scores[class_id]
+
+                if confidence > confidence_threshold:
+                    center_x, center_y, width, height = list(
+                        map(int, detection[0:4] * np.array([w, h, w, h])))
+
                     top_left_x = int(center_x - (width / 2))
                     top_left_y = int(center_y - (height / 2))
 
                     bboxes.append([top_left_x, top_left_y, width, height])
-                    classIds.append(classId)
-                    confs.append(float(confidence))
+                    confidences.append(float(confidence))
+                    class_ids.append(class_id)
 
-        indices = cv2.dnn.NMSBoxes(bboxes, confs, self.confThreshold, self.nmsThreshold)
-        self.n_frame.append(indices)
+        indices = cv2.dnn.NMSBoxes(
+            bboxes, confidences, confidence_threshold, nms_threshold)
 
-        if scale:
-            expand_bboxes = []
+        num_obj = len(indices)
+        expand_bboxes = []
+
+        if num_obj > 0:
             for i in indices.flatten():
                 x, y, w, h = bboxes[i]
                 x = abs(int(x - crop_scale * w))
@@ -63,39 +93,30 @@ class YOLO:
                 w = abs(int((1 + 2 * crop_scale) * w))
                 h = abs(int((1 + 2 * crop_scale) * h))
 
-                expand_bboxes.append([x, y, w, h])
-            bboxes = expand_bboxes
+                expand_bboxes.append((x, y, w, h))
 
         if show:
-            for i in indices.flatten():
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            for i in range(len(expand_bboxes)):
                 x, y, w, h = expand_bboxes[i]
-                cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-                cv2.putText(img, f'{self.classNames[0].upper()} {int(confs[i] * 100)}%',
-                            (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                tag = f"{self.class_names[class_ids[i]]}: {round(confidences[i] * 100, 2)}%"
+                color = (0, 0, 255)
+                cv2.rectangle(image, (x, y), (x + w, y + h), color=color, thickness=2)
+                cv2.putText(image, text=tag, org=(x, y - 10),
+                            fontFace=font, fontScale=0.5, color=color, thickness=2, lineType=cv2.LINE_AA)
+            plt.imshow(image)
 
-        for box in bboxes:
+        # * return crop image
+        results = []
+        for box in expand_bboxes:
             x, y, w, h = box
-            results.append(img[y:y+h, x:x+w])
+            results.append(image[y:y+h, x:x+w])
 
-        scale = max([max(hT//results[i].shape[0], wT//results[i].shape[1]) for i in range(len(results))])
+        scale_up = max([max(h//results[i].shape[0], w//results[i].shape[1]) for i in range(len(results))])
 
-        results = [cv2.resize(img_crop, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC) for img_crop in results]
+        results = [cv2.resize(img_crop, None, fx=scale_up, fy=scale_up, interpolation=cv2.INTER_CUBIC) for img_crop in results]
 
-        return results
-
-    def detect(self, img, show=False, scale=True, crop_scale=0.1):
-        if isinstance(img, str):
-            img = cv2.imread(img)
-
-        blob = cv2.dnn.blobFromImage(img, 1 / 255., (self.whT, self.whT), [0, 0, 0], swapRB=True, crop=False)
-        self.net.setInput(blob)
-
-        layersNames = self.net.getLayerNames()
-        outputNames = [(layersNames[i[0] - 1]) for i in self.net.getUnconnectedOutLayers()]
-        outputs = self.net.forward(outputNames)
-        img_crop = self.findObjects(outputs, img, show=show, scale=scale, crop_scale=crop_scale)
-
-        return img_crop
+        return results, (image, (expand_bboxes, class_ids, confidences))
 
 
 if __name__ == '__main__':

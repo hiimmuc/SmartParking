@@ -6,9 +6,10 @@ import typing
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 from GUI.gui_utils import *
+from LicenseDetection import Yolo_LP
 from LicenseRecognition import *
 
 
@@ -22,10 +23,6 @@ def gui():
 
 def model():
     # Choose random motorbike image from the dataset
-    num = random.randint(0, 2489)
-    image_name = "xemay" + str(num) + ".jpg"
-    # img_path = os.path.join(r"backup\Number Plate Dataset\yolo_plate_dataset", image_name)
-    img_path = r"backup\Number Plate Dataset\yolo_plate_dataset\xemay1432.jpg"
     img_path = r"LicenseOCR\test image\bien-so-xe-4-so-xau.jpg"
 
     recognizer = LicenseRecognizer()
@@ -48,7 +45,14 @@ def model():
                             preprocess=False,
                             show=True)
 
+    recognizer.extract_info(img_path,
+                            detection=True,
+                            ocr=False,
+                            preprocess=True,
+                            show=True)
+
 
 if __name__ == "__main__":
-    model()
-    # gui()
+    # model()
+    gui()
+    pass

@@ -3,8 +3,8 @@ import serial
 
 
 class UART():
-    def __init__(self, port, baudrate=9600, timeout=0):
-        self.rfid_serial_port = serial.Serial(port, baudrate, timeout)
+    def __init__(self, port, baud_rate=9600, timeout=0):
+        self.rfid_serial_port = serial.Serial(port, baud_rate, timeout)
 
     def read_id(self):
         id_num = []
@@ -17,6 +17,7 @@ class UART():
                 i = 0
                 ID = "".join(map(str, id_num))
                 print(ID)
+                break
             else:
                 id_num.append(data)
         return id_num

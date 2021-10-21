@@ -10,7 +10,7 @@ from LicenseDetection import *
 from LicenseOCR import *
 from LicenseRecognition import LicenseRecognizer
 
-# TODO: implement all things :v
+# *DESC* implement all things :v
 
 
 class Pipeline:

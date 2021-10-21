@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'gui.ui'
+# Form implementation generated from reading ui file 'GUI\gui.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -58,10 +58,10 @@ class Ui_MainWindow(object):
         self.MoneyLeft.setGeometry(QtCore.QRect(800, 30, 191, 41))
         self.MoneyLeft.setObjectName("MoneyLeft")
         self.InputID = QtWidgets.QLineEdit(self.groupBox_2)
-        self.InputID.setGeometry(QtCore.QRect(250, 30, 251, 41))
+        self.InputID.setGeometry(QtCore.QRect(250, 30, 331, 41))
         font = QtGui.QFont()
         font.setFamily("Segoe UI")
-        font.setPointSize(16)
+        font.setPointSize(18)
         font.setBold(False)
         font.setWeight(50)
         self.InputID.setFont(font)
@@ -69,9 +69,6 @@ class Ui_MainWindow(object):
         self.InputID.setAutoFillBackground(True)
         self.InputID.setClearButtonEnabled(False)
         self.InputID.setObjectName("InputID")
-        self.confirmButton = QtWidgets.QPushButton(self.groupBox_2)
-        self.confirmButton.setGeometry(QtCore.QRect(514, 30, 71, 41))
-        self.confirmButton.setObjectName("confirmButton")
         self.groupBox_3 = QtWidgets.QGroupBox(self.centralwidget)
         self.groupBox_3.setGeometry(QtCore.QRect(670, 0, 351, 71))
         self.groupBox_3.setObjectName("groupBox_3")
@@ -231,7 +228,6 @@ class Ui_MainWindow(object):
         self.ledTrigger.setText(_translate("MainWindow", "Trigger"))
         self.id.setText(_translate("MainWindow", "ID scan from ID card"))
         self.account.setText(_translate("MainWindow", "Money left in account"))
-        self.confirmButton.setText(_translate("MainWindow", "Cofirm"))
         self.groupBox_3.setTitle(_translate("MainWindow", "GroupBox"))
         self.label_2.setText(_translate("MainWindow", "Count"))
         self.label_3.setText(_translate("MainWindow", "Max"))
