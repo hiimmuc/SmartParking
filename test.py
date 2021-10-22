@@ -6,19 +6,9 @@ import typing
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from PyQt5 import QtWidgets
 
-from GUI.gui_utils import *
 from LicenseDetection import Yolo_LP
 from LicenseRecognition import *
-
-
-def gui():
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = App(MainWindow=MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
 
 
 def model():
@@ -53,6 +43,5 @@ def model():
 
 
 if __name__ == "__main__":
-    # model()
-    gui()
+    model()
     pass

@@ -116,7 +116,7 @@ class YOLO:
 
         results = [cv2.resize(img_crop, None, fx=scale_up, fy=scale_up, interpolation=cv2.INTER_CUBIC) for img_crop in results]
 
-        return results, (image, (expand_bboxes, class_ids, confidences))
+        return results, (image, (expand_bboxes, (class_ids, confidences)))
 
 
 if __name__ == '__main__':

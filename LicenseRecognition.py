@@ -43,11 +43,9 @@ class LicenseRecognizer:
             read_img = plates[0]
 
         _, axarr = plt.subplots(1, 2)
+        axarr[0].imshow(read_img)
 
         if ocr:
-
-            axarr[0].imshow(read_img)
-
             if preprocess:
                 read_img = preprocess_image(read_img, pad=False)
                 axarr[1].imshow(read_img)

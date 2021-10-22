@@ -4,7 +4,6 @@ from pathlib import Path
 
 import cv2
 import pandas as pd
-from PIL import Image
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QMessageBox, QTableWidgetItem
@@ -19,9 +18,6 @@ except Exception as e:
 
     from gui import *
     from gui_thread import *
-
-ID_BOX = (700, 770)
-AFFIRM_BUTTON = (900, 770)
 
 
 def convert_cv2qt(cv_img, size=(640, 360)):
@@ -74,8 +70,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.timer = QtCore.QTimer()
 
         # Table
-        self.table = {'account': {},
-                      'database': {},
+        self.table = {'database': {'ID': [],
+                                   'plate_id': [],
+                                   'plate_path': []},
+                      'account': {'ID': [],
+                                  'money_left': []},
                       'plc': {}}
 
         # databsase root
@@ -86,7 +85,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.thread.start()
         # self.rs485_pipe.check_connection()
         # self.rs485_connected = self.rs485_pipe.connected_to_plc
-        # self.program_pipeline()
+        self.program_pipeline()
         self.update_lcd_led(mode='reset')
         self.running = True
 
@@ -149,10 +148,10 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     # +++++++++++++++++++++++++++++++++++ License detection handling ++++++++++++++++++++++++++++++++++++++++
     def is_detected_plate(self):
         if self.detect_flag:
-            self.current_plates, self.current_plate_ids, _ = self.model.extract_info(self.current_frame,
-                                                                                     detection=True,
-                                                                                     ocr=False,
-                                                                                     preprocess=True)
+            self.current_plate, self.current_plate_id, _ = self.model.extract_info(self.current_frame,
+                                                                                   detection=True,
+                                                                                   ocr=False,
+                                                                                   preprocess=True)
 
             if len(self.current_plates) > 0:
                 return True
@@ -225,12 +224,12 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         try:
             csv_path = Path(self.root_dir, f"{table_name}.csv")
             data = pd.read_csv(csv_path)
-            if table_name == 'account':
-                self.table[table_name]['id'] = list(data['id'])
-                self.table[table_name]['plate'] = list(data['plate'])
+            if table_name == 'database':
+                self.table[table_name]['ID'] = list(data['ID'])
+                self.table[table_name]['plate'] = list(data['plate_id'])
                 self.table[table_name]['plate_path'] = list(data['plate_path'])
-            elif table_name == 'database':
-                self.table[table_name]['id'] = list(data['id'])
+            elif table_name == 'account':
+                self.table[table_name]['ID'] = list(data['ID'])
                 self.table[table_name]['money_left'] = list(data['money_left'])
             elif table_name == 'plc':
                 self.table[table_name]['name'] = list(data['name'])
@@ -266,6 +265,26 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.currentID = text
         self.InputID.clear()
 
+    def database_handle(self, id=0, plate_num=None, plate=None, mode='add'):
+        if mode == 'add':
+            save_path = str(Path(self.root_dir, f"{plate_num}.jpg"))
+
+            self.table['database']['ID'].append(id)
+            self.table['database']['plate_id'].append(plate_num)
+            self.table['database']['plate_path'].append(save_path)
+            cv2.imwrite(save_path, plate)
+
+            self.write_csv('database')
+        if mode == 'remove':
+            save_path = str(Path(self.root_dir, f"{plate_num}.jpg"))
+
+            self.table['database']['ID'].remove(id)
+            self.table['database']['plate_id'].remove(plate_num)
+            self.table['database']['plate_path'].remove(save_path)
+            os.remove(save_path)
+
+            self.write_csv('database')
+
     # +++++++++++++++++++++++++++++++++++ Utils function ++++++++++++++++++++++++++++++++++++++++++
 
     def update_lcd_led(self, lcd='', value=0, mode='default'):
@@ -283,10 +302,12 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             lcd_box[lcd].display(str(int(value)))
         else:
             mode = 'reset'
-            print(f'[ERROR] LCD {lcd} not found')
+            print(f'[WARNING] LCD {lcd} not specified')
 
         if mode == 'reset':
-            lcd_box['MoneyLeft'].display(99999)
+            lcd_box['MoneyLeft'].display(00000)
+            self.current_slot_num = len(self.table['database']['ID'])
+            self.max_slots = len(self.table['account']['ID'])
             lcd_box['SlotCount'].display(self.current_slot_num)
             lcd_box['TotalSlot'].display(self.max_slots)
 
@@ -336,6 +357,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         elif method == 'open left':
             # mo cong vao
             self.SlotCount += 1
+
             pass
         elif method == 'open right':
             # mo cong ra
@@ -362,6 +384,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     def program_pipeline(self):
         try:
             self.init_all_table()
+            self.update_lcd_led()
             if self.is_detected_plate():
                 self.detect_flag = False
                 #  read database if exits plot
@@ -369,11 +392,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 plate_ids = self.current_plate_ids
 
                 # Xe di ra khoi khu vuc
-                if plate_ids in self.table['database']['id']:
+                if plate_ids in self.table['database']['plate_id'] or self.currentID in self.table['account']['ID']:
                     idx = self.table['database']['id'].index(plate_ids)
                     plate_path = self.table['database']['plate_path'][idx]
                     plate_img = cv2.imread(plate_path)
-                    self.update_extracted_image('view_in', plate_img)
+                    self.update_extracted_image('view_out', plate_img)
                     self.update_label('extractedInfo', f"{plate_ids}")
                     self.update_extracted_image('view_in', plates[0])
                     self.update_color_led_label('Verify', 'green')
@@ -384,6 +407,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     self.update_lcd_led('Money')
                     self.update_lcd_led('SlotCount')
                     # TODO xoa khoi database
+                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate_img, mode='remove')
                     self.delay(3)
                     self.update_lcd_led(mode='reset')
 
@@ -396,16 +420,18 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     # >> get id from rfid
                     self.park_control('open left')
                     # TODO them vao database
+                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plates[0], mode='add')
+
                     self.update_lcd_led('Money')
                     self.update_lcd_led('SlotCount')
 
-                    # NOTE: image_path = str(Path(self.root_dir, f"{plate_id}.{format}"))
-
+                # sau khi lam xong hanh dong tren thi phat co cho detect tiep
                 self.detect_flag = True
             else:
                 # khong co xe
                 self.update_color_led_label('Verify', 'white')
                 self.update_color_led_label('ledTrigger', 'white')
+                self.detect_flag = True
 
         except Exception as e:
             self.popup_msg(str(e), 'program_pipeline', 'error')

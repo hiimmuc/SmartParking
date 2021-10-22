@@ -130,7 +130,6 @@ def super_resolution(model_name, zoom, image):
 
 
 def preprocess_image(image, pad=True):
-
     deskew_img = deskew(image)
 
     gray = get_grayscale(deskew_img)
@@ -138,11 +137,11 @@ def preprocess_image(image, pad=True):
     thresh = thresholding(gray)
 
     if pad:
-        image = padding(thresh)
+        out = padding(thresh)
     else:
-        image = thresh
-    image = opening(image)
+        out = thresh
+    out = opening(out)
 
-    image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-    # rgb = super_resolution("ESPCN", 2, rgb)
-    return image
+    out = cv2.cvtColor(out, cv2.COLOR_GRAY2BGR)
+
+    return out
