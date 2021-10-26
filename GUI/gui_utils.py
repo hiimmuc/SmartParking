@@ -42,12 +42,20 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     def __init__(self, MainWindow, rs485, model) -> None:
         super().__init__()
         self.setupUi(MainWindow)
+        # create thread
+        self.thread = VideoThread(recognizer_model=model)
+        # connect its signal to the update_image slot
+        self.thread.change_pixmap_signal.connect(self.program_pipeline)
+
+        self.startButton.clicked.connect(self.start_program)
+        self.stopButton.clicked.connect(self.stop_program)
+        self.InputID.returnPressed.connect(self.get_id_input)
 
         self.model = model
         self.rs485_pipe = rs485
+        self.currentID = None
 
         self.rs485_connected = False
-
         self.uart_connected = False
         self.detect_flag = True
 
@@ -55,16 +63,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.running = False
         self.current_slot_num = 37
         self.max_slots = 99
-
-        self.thread = VideoThread()
-        # create the video capture thread
-        self.thread = VideoThread()
-        # connect its signal to the update_image slot
-        self.thread.change_pixmap_signal.connect(self.camera_screen)
-
-        self.startButton.clicked.connect(self.start_program)
-        self.stopButton.clicked.connect(self.stop_program)
-        self.InputID.returnPressed.connect(self.get_id_input)
+        self.current_frame = None
 
         # timer for reading step
         self.timer = QtCore.QTimer()
@@ -82,11 +81,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
     # TODO: complete here
     def start_program(self):
+        self.init_all_table()
+        print(self.table['database'])
+        self.update_lcd_led()
+
         self.thread.start()
-        # self.rs485_pipe.check_connection()
-        # self.rs485_connected = self.rs485_pipe.connected_to_plc
-        self.program_pipeline()
-        self.update_lcd_led(mode='reset')
         self.running = True
 
     def stop_program(self):
@@ -121,7 +120,6 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
     # +++++++++++++++++++++++++++++++++++ Camera view handling ++++++++++++++++++++++++++++++++++++++++
 
-    @pyqtSlot(np.ndarray, list)
     def camera_screen(self, cv_img):
         '''continuous update camera screen using thread
 
@@ -146,8 +144,10 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             self.ViewPlateOut.setPixmap(qt_img)
 
     # +++++++++++++++++++++++++++++++++++ License detection handling ++++++++++++++++++++++++++++++++++++++++
+
     def is_detected_plate(self):
         if self.detect_flag:
+            print('Detecting plate...')
             self.current_plate, self.current_plate_id, _ = self.model.extract_info(self.current_frame,
                                                                                    detection=True,
                                                                                    ocr=False,
@@ -226,7 +226,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             data = pd.read_csv(csv_path)
             if table_name == 'database':
                 self.table[table_name]['ID'] = list(data['ID'])
-                self.table[table_name]['plate'] = list(data['plate_id'])
+                self.table[table_name]['plate_id'] = list(data['plate_id'])
                 self.table[table_name]['plate_path'] = list(data['plate_path'])
             elif table_name == 'account':
                 self.table[table_name]['ID'] = list(data['ID'])
@@ -381,57 +381,110 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
     # +++++++++++++++++++++++++++++++++++ start ++++++++++++++++++++++++++++++++++++++++++
     # TODO: complete here
-    def program_pipeline(self):
+    @pyqtSlot(np.ndarray, list)
+    def program_pipeline(self, frame=None, plate_info=None):
+        #! reset all value
+        id_exist = False
+        plate_exist = False
+        plate_in = False
+        self.currentID = None
+
         try:
-            self.init_all_table()
-            self.update_lcd_led()
-            if self.is_detected_plate():
-                self.detect_flag = False
-                #  read database if exits plot
-                plates = self.current_plates
-                plate_ids = self.current_plate_ids
+            if frame is not None:
+                # show frame from camera
+                self.camera_screen(frame)
+                plate, plate_ids, conf = plate_info
 
-                # Xe di ra khoi khu vuc
-                if plate_ids in self.table['database']['plate_id'] or self.currentID in self.table['account']['ID']:
-                    idx = self.table['database']['id'].index(plate_ids)
-                    plate_path = self.table['database']['plate_path'][idx]
-                    plate_img = cv2.imread(plate_path)
-                    self.update_extracted_image('view_out', plate_img)
-                    self.update_label('extractedInfo', f"{plate_ids}")
-                    self.update_extracted_image('view_in', plates[0])
-                    self.update_color_led_label('Verify', 'green')
-                    self.update_color_led_label('ledTrigger', 'red')
-                    # >> get id from rfid
-                    self.park_control('pay')
-                    self.park_control('open right')
-                    self.update_lcd_led('Money')
-                    self.update_lcd_led('SlotCount')
-                    # TODO xoa khoi database
-                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate_img, mode='remove')
-                    self.delay(3)
-                    self.update_lcd_led(mode='reset')
+                if self.currentID:
+                    print(f'[INFO] currentID: {self.currentID}')
+                    if self.currentID in self.table['account']['ID']:
+                        id_exist = True
 
+                if plate_ids and conf > 0.5:
+                    print(f'[INFO] plate_ids: {plate_ids}')
+                    plate_in = True
+                    if plate_ids in self.table['database']['plate_id']:
+                        plate_exist = True
+                    else:
+                        plate_exist = False
+
+                # * if vehicle come into camera view and plate is detected
+                if plate_in:
+                    if id_exist or plate_exist:
+                        print("[INFO] Xe di ra khoi khu vuc")
+                        """
+                        1. doc anh bien xe luu o database
+                        2. update vao view out
+                        3. update anh camera quay dc vao view in
+                        4. update led label verify -> green and ledTrigger -> red
+                        5. tru tien tai khoan park_control(pay)
+                        6. truyen tin hieu mo cong ben phai park_control(open right)
+                        7. update led of monley_left
+                        8. xoa khoi database by database_handle(remove)
+                        9. delay 3s
+                        10. update slots count (so xe hien tai trong bai)
+                        """
+
+                    else:
+                        print("[INFO] Xe di vao khu vuc")
+                        """
+                        1. update anh camera quay duoc len view in
+                        2. update led label verify -> red and ledTrigger -> green
+                        3. update label extractedInfo to plate id
+                        4. truyen tin hieu mo cong ben trai park_control(open left)
+                        5. them vao database by database_handle(add)
+                        6. update led of monley_left
+                        7. update led slot count
+                        """
                 else:
-                    # Xe di vao khu vuc
-                    self.update_extracted_image('view_in', plates[0])
-                    self.update_label('extractedInfo', f"{plate_ids}")
-                    self.update_color_led_label('Verify', 'red')
-                    self.update_color_led_label('ledTrigger', 'green')
-                    # >> get id from rfid
-                    self.park_control('open left')
-                    # TODO them vao database
-                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plates[0], mode='add')
+                    """
+                    khong co xe nao vao vung camera 
+                    1. update 2 led label verify -> white and ledTrigger -> white
+                    """
+                    pass
+            # TODO: it can be delete when the baseline above is done
+            #     # Xe di ra khoi khu vuc
+            #     if plate_ids in self.table['database']['plate_id'] or self.currentID in self.table['account']['ID']:
+            #         print('[INFO] Xe di ra khoi khu vuc')
+            #         idx = self.table['database']['id'].index(plate_ids)
+            #         plate_path = self.table['database']['plate_path'][idx]
+            #         plate_img = cv2.imread(plate_path)
+            #         self.update_extracted_image('view_out', plate_img)
+            #         # self.update_label('extractedInfo', f"{plate_ids}")
+            #         self.update_extracted_image('view_in', plates)
+            #         # self.update_color_led_label('Verify', 'green')
+            #         # self.update_color_led_label('ledTrigger', 'red')
+            #         # # >> get id from rfid
+            #         # self.park_control('pay')
+            #         # self.park_control('open right')
+            #         # self.update_lcd_led('Money')
+            #         # self.update_lcd_led('SlotCount')
+            #         # # TODO xoa khoi database
+            #         # self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate_img, mode='remove')
+            #         # self.delay(3)
+            #         # self.update_lcd_led(mode='reset')
 
-                    self.update_lcd_led('Money')
-                    self.update_lcd_led('SlotCount')
+            #     else:
+            #         # Xe di vao khu vuc
+            #         self.update_extracted_image('view_in', plates)
+            #         # self.update_label('extractedInfo', f"{plate_ids}")
+            #         # self.update_color_led_label('Verify', 'red')
+            #         # self.update_color_led_label('ledTrigger', 'green')
+            #         # # >> get id from rfid
+            #         # self.park_control('open left')
+            #         # # TODO them vao database
+            #         # self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plates[0], mode='add')
 
-                # sau khi lam xong hanh dong tren thi phat co cho detect tiep
-                self.detect_flag = True
-            else:
-                # khong co xe
-                self.update_color_led_label('Verify', 'white')
-                self.update_color_led_label('ledTrigger', 'white')
-                self.detect_flag = True
+            #         # self.update_lcd_led('Money')
+            #         # self.update_lcd_led('SlotCount')
+
+            #     # sau khi lam xong hanh dong tren thi phat co cho detect tiep
+            #     self.detect_flag = True
+            # else:
+            #     # khong co xe
+            #     self.update_color_led_label('Verify', 'white')
+            #     self.update_color_led_label('ledTrigger', 'white')
+            #     self.detect_flag = True
 
         except Exception as e:
             self.popup_msg(str(e), 'program_pipeline', 'error')

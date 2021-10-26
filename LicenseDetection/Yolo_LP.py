@@ -95,28 +95,31 @@ class YOLO:
 
                 expand_bboxes.append((x, y, w, h))
 
-        if show:
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            for i in range(len(expand_bboxes)):
-                x, y, w, h = expand_bboxes[i]
-                tag = f"{self.class_names[class_ids[i]]}: {round(confidences[i] * 100, 2)}%"
-                color = (0, 0, 255)
-                cv2.rectangle(image, (x, y), (x + w, y + h), color=color, thickness=2)
-                cv2.putText(image, text=tag, org=(x, y - 10),
-                            fontFace=font, fontScale=0.5, color=color, thickness=2, lineType=cv2.LINE_AA)
-            plt.imshow(image)
+            if show:
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                for i in range(len(expand_bboxes)):
+                    x, y, w, h = expand_bboxes[i]
+                    tag = f"{self.class_names[class_ids[i]]}: {round(confidences[i] * 100, 2)}%"
+                    color = (0, 0, 255)
+                    cv2.rectangle(image, (x, y), (x + w, y + h), color=color, thickness=2)
+                    cv2.putText(image, text=tag, org=(x, y - 10),
+                                fontFace=font, fontScale=0.5, color=color, thickness=2, lineType=cv2.LINE_AA)
+                plt.imshow(image)
 
-        # * return crop image
-        results = []
-        for box in expand_bboxes:
-            x, y, w, h = box
-            results.append(image[y:y+h, x:x+w])
+            # * return crop image
+            results = []
+            for box in expand_bboxes:
+                x, y, w, h = box
+                results.append(image[y:y+h, x:x+w])
 
-        scale_up = max([max(h//results[i].shape[0], w//results[i].shape[1]) for i in range(len(results))])
+            scale_up = max([max(h//results[i].shape[0], w//results[i].shape[1]) for i in range(len(results))])
 
-        results = [cv2.resize(img_crop, None, fx=scale_up, fy=scale_up, interpolation=cv2.INTER_CUBIC) for img_crop in results]
+            results = [cv2.resize(img_crop, None, fx=scale_up, fy=scale_up, interpolation=cv2.INTER_CUBIC) for img_crop in results]
 
-        return results, (image, (expand_bboxes, (class_ids, confidences)))
+            return results, (image, (expand_bboxes, (class_ids, confidences)))
+
+        else:
+            return [], None
 
 
 if __name__ == '__main__':

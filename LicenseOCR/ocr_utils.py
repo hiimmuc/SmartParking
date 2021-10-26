@@ -143,5 +143,6 @@ def preprocess_image(image, pad=True):
     out = opening(out)
 
     out = cv2.cvtColor(out, cv2.COLOR_GRAY2BGR)
+    # use bitwise and to apply mask on image
 
     return out
