@@ -15,7 +15,6 @@ try:
     from GUI.gui_thread import *
 except Exception as e:
     sys.stdout.write(str(e))
-
     from gui import *
     from gui_thread import *
 
@@ -442,6 +441,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     1. update 2 led label verify -> white and ledTrigger -> white
                     """
                     pass
+            # TODO: update_tracking_plc_table in gui
+            
             # TODO: it can be delete when the baseline above is done
             #     # Xe di ra khoi khu vuc
             #     if plate_ids in self.table['database']['plate_id'] or self.currentID in self.table['account']['ID']:
