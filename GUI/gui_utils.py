@@ -63,6 +63,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.current_slot_num = 37
         self.max_slots = 99
         self.current_frame = None
+        self.current_money = 0
 
         # timer for reading step
         self.timer = QtCore.QTimer()
@@ -104,6 +105,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             self.popup = QMessageBox()
             if type_msg.lower() == 'warning':
                 self.popup.setIcon(QMessageBox.Warning)
+                self.is_error = True
             elif type_msg.lower() == 'error':
                 self.popup.setIcon(QMessageBox.Critical)
                 self.is_error = True
@@ -136,7 +138,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             cv_img:
             screen ([str]): which screen to update in or out
         '''
-        qt_img = convert_cv2qt(cv_img)
+        qt_img = convert_cv2qt(cv_img, size=(359, 179))
         if screen == 'view_in':
             self.ViewPlateIn.setPixmap(qt_img)
         elif screen == 'view_out':
@@ -222,7 +224,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         '''
         try:
             csv_path = Path(self.root_dir, f"{table_name}.csv")
-            data = pd.read_csv(csv_path)
+            data = pd.read_csv(csv_path, converters={i: str for i in range(0, self.max_slots)})
             if table_name == 'database':
                 self.table[table_name]['ID'] = list(data['ID'])
                 self.table[table_name]['plate_id'] = list(data['plate_id'])
@@ -259,10 +261,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     # +++++++++++++++++++++++++++++++++++ ID part handling ++++++++++++++++++++++++++++++++++++++++
 
     # track slot in park and money in account after that display on screen
-    def get_id_input(self):
+    def get_id_input(self, auto_clear=False):
         text = self.InputID.text()
-        self.currentID = text
-        self.InputID.clear()
+        if auto_clear:
+            self.InputID.clear()
+        return text if len(text) > 0 else None
 
     def database_handle(self, id=0, plate_num=None, plate=None, mode='add'):
         if mode == 'add':
@@ -352,16 +355,19 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             # tru tien tai khoan
             ticket = Parking.price
             # cap nhat self.MoneyLeft toi so du hien tai
-            pass
+            idx = self.table['account']['ID'].index(self.currentID)
+            self.current_money = self.table['account']['money_left'][idx] - ticket
         elif method == 'open left':
             # mo cong vao
-            self.SlotCount += 1
+            self.current_slot_num += 1
+            # >> Truyen tin hieu mo cong ben trai (cong ra) xuong plc
+            # self.rs485_pipe.write(b'10')
 
-            pass
         elif method == 'open right':
             # mo cong ra
-            self.SlotCount -= 1
-            pass
+            self.current_slot_num -= 1
+            # >> Truyen tin hieu mo cong ben phai (cong vao) xuong plc
+            # self.rs485_pipe.write(b'11')
 
     def image_flow(self, image, image_path, mode='save'):
         '''control flow of image to communicate with excel and backup folder
@@ -378,7 +384,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             if os.path.exists(image_path):
                 os.remove(image_path)
 
-    # +++++++++++++++++++++++++++++++++++ start ++++++++++++++++++++++++++++++++++++++++++
+    # +++++++++++++++++++++++++++++++++++ program pipeline ++++++++++++++++++++++++++++++++++++++++++
     # TODO: complete here
     @pyqtSlot(np.ndarray, list)
     def program_pipeline(self, frame=None, plate_info=None):
@@ -386,106 +392,91 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         id_exist = False
         plate_exist = False
         plate_in = False
-        self.currentID = None
+        self.currentID = self.get_id_input()
 
         try:
-            if frame is not None:
-                # show frame from camera
-                self.camera_screen(frame)
-                plate, plate_ids, conf = plate_info
+            assert frame is not None, "Camera source is not found"
+            # show frame from camera
+            self.camera_screen(frame)
+            plate, plate_ids, conf = plate_info
 
-                if self.currentID:
-                    print(f'[INFO] currentID: {self.currentID}')
-                    if self.currentID in self.table['account']['ID']:
-                        id_exist = True
+            if self.currentID:
+                print(f'[INFO] currentID: {self.currentID}')
+                if self.currentID in self.table['database']['ID']:
+                    id_exist = True
+                #     idx = self.table['database']['ID'].index(self.currentID)
+                #     plate_in_img = cv2.imread(self.table['database']['plate_path'][idx])
+                #     # * 2. update vao view out
+                #     self.update_extracted_image('view_out', plate_in_img)
+                # print(self.table['account']['money_left'][self.table['account']['ID'].index(self.currentID)])
 
-                if plate_ids and conf > 0.5:
-                    print(f'[INFO] plate_ids: {plate_ids}')
-                    plate_in = True
-                    if plate_ids in self.table['database']['plate_id']:
-                        plate_exist = True
-                    else:
-                        plate_exist = False
-
-                # * if vehicle come into camera view and plate is detected
-                if plate_in:
-                    if id_exist or plate_exist:
-                        print("[INFO] Xe di ra khoi khu vuc")
-                        """
-                        1. doc anh bien xe luu o database
-                        2. update vao view out
-                        3. update anh camera quay dc vao view in
-                        4. update led label verify -> green and ledTrigger -> red
-                        5. tru tien tai khoan park_control(pay)
-                        6. truyen tin hieu mo cong ben phai park_control(open right)
-                        7. update led of monley_left
-                        8. xoa khoi database by database_handle(remove)
-                        9. delay 3s
-                        10. update slots count (so xe hien tai trong bai)
-                        """
-
-                    else:
-                        print("[INFO] Xe di vao khu vuc")
-                        """
-                        1. update anh camera quay duoc len view in
-                        2. update led label verify -> red and ledTrigger -> green
-                        3. update label extractedInfo to plate id
-                        4. truyen tin hieu mo cong ben trai park_control(open left)
-                        5. them vao database by database_handle(add)
-                        6. update led of monley_left
-                        7. update led slot count
-                        """
+            if plate_ids and conf > 0.5:
+                print(f'[INFO] plate_ids: {plate_ids}')
+                plate_in = True
+                if plate_ids in self.table['database']['plate_id']:
+                    plate_exist = True
                 else:
-                    """
-                    khong co xe nao vao vung camera 
-                    1. update 2 led label verify -> white and ledTrigger -> white
-                    """
-                    pass
-            # TODO: update_tracking_plc_table in gui
-            
-            # TODO: it can be delete when the baseline above is done
-            #     # Xe di ra khoi khu vuc
-            #     if plate_ids in self.table['database']['plate_id'] or self.currentID in self.table['account']['ID']:
-            #         print('[INFO] Xe di ra khoi khu vuc')
-            #         idx = self.table['database']['id'].index(plate_ids)
-            #         plate_path = self.table['database']['plate_path'][idx]
-            #         plate_img = cv2.imread(plate_path)
-            #         self.update_extracted_image('view_out', plate_img)
-            #         # self.update_label('extractedInfo', f"{plate_ids}")
-            #         self.update_extracted_image('view_in', plates)
-            #         # self.update_color_led_label('Verify', 'green')
-            #         # self.update_color_led_label('ledTrigger', 'red')
-            #         # # >> get id from rfid
-            #         # self.park_control('pay')
-            #         # self.park_control('open right')
-            #         # self.update_lcd_led('Money')
-            #         # self.update_lcd_led('SlotCount')
-            #         # # TODO xoa khoi database
-            #         # self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate_img, mode='remove')
-            #         # self.delay(3)
-            #         # self.update_lcd_led(mode='reset')
+                    plate_exist = False
 
-            #     else:
-            #         # Xe di vao khu vuc
-            #         self.update_extracted_image('view_in', plates)
-            #         # self.update_label('extractedInfo', f"{plate_ids}")
-            #         # self.update_color_led_label('Verify', 'red')
-            #         # self.update_color_led_label('ledTrigger', 'green')
-            #         # # >> get id from rfid
-            #         # self.park_control('open left')
-            #         # # TODO them vao database
-            #         # self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plates[0], mode='add')
+            # * if vehicle come into camera view and plate is detected
+            if plate_in:
+                if id_exist or plate_exist:
+                    print("[INFO] Xe di ra khoi khu vuc")
+                    idx = self.table['database']['ID'].index(plate_ids)
 
-            #         # self.update_lcd_led('Money')
-            #         # self.update_lcd_led('SlotCount')
+                    # * 1. doc anh bien xe luu o database
+                    plate_in_img = cv2.imread(self.table['database']['plate_path'][idx])
+                    # * 2. update vao view out
+                    self.update_extracted_image('view_out', plate_in_img)
+                    self.update_label('extractedInfo', f'{plate_ids}')
+                    # * 3. update anh camera quay dc vao view in
+                    self.update_extracted_image('view_in', plate)
+                    # * 4. update led label verify -> green and ledTrigger -> red
+                    self.update_color_led_label('Verify', 'green')
+                    self.update_color_led_label('ledTrigger', 'red')
+                    # * 5. tru tien tai khoan park_control(pay)
+                    self.park_control('pay')
+                    # * 6. truyen tin hieu mo cong ben phai park_control(open right)
+                    self.park_control('open right')
+                    # * 7. update led of monley_left
+                    self.update_lcd_led('MoneyLeft', self.current_money)
+                    # * 8. xoa khoi database by database_handle(remove)
+                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate, mode='remove')
+                    # * 9. delay 3s
+                    self.delay(3)
+                    # * 10. update slots count (so xe hien tai trong bai)
+                    self.update_lcd_led(mode='reset')
 
-            #     # sau khi lam xong hanh dong tren thi phat co cho detect tiep
-            #     self.detect_flag = True
-            # else:
-            #     # khong co xe
-            #     self.update_color_led_label('Verify', 'white')
-            #     self.update_color_led_label('ledTrigger', 'white')
-            #     self.detect_flag = True
+                else:
+                    print("[INFO] Xe di vao khu vuc")
+
+                    # * 1. update anh camera quay duoc len view in, den khi co anh moi thi moi doi anh
+                    self.update_extracted_image('view_in', plate)
+                    # * 2. update led label verify -> red and ledTrigger -> green
+                    self.update_color_led_label('Verify', 'red')
+                    self.update_color_led_label('ledTrigger', 'green')
+                    # * 3. update label extractedInfo to plate id
+                    self.update_label('extractedInfo', f'{plate_ids}')
+                    # * 4. truyen tin hieu mo cong ben trai park_control(open left)
+                    self.park_control('open left')
+                    # * 5. them vao database by database_handle(add)
+                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate, mode='add')
+                    # * 6. update led of monley_left
+                    self.update_lcd_led('MoneyLeft', self.current_money)
+                    # * 7. update led slot count
+                    self.update_lcd_led('reset')
+
+            else:
+                """
+                khong co xe nao vao vung camera 
+                1. update 2 led label verify -> white and ledTrigger -> white
+                """
+                self.update_color_led_label('Verify', 'white')
+                self.update_color_led_label('ledTrigger', 'white')
+
+            # * update_tracking_plc_table in gui
+            # self.update_tracking_plc_table()
+            self.InputID.clear()
 
         except Exception as e:
             self.popup_msg(str(e), 'program_pipeline', 'error')
