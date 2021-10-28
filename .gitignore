@@ -3,4 +3,6 @@ venv/
 .idea/
 LicenseDetection/backup/
 Downloads/
-backup/
+backup/model
+backup/Number Plate Dataset
+backup/*.jpg
