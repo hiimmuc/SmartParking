@@ -52,7 +52,6 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
         self.model = model
         self.rs485_pipe = rs485
-        self.currentID = None
 
         self.rs485_connected = False
         self.uart_connected = False
@@ -82,7 +81,6 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     # TODO: complete here
     def start_program(self):
         self.init_all_table()
-        print(self.table['database'])
         self.update_lcd_led()
 
         self.thread.start()
@@ -262,6 +260,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
     # track slot in park and money in account after that display on screen
     def get_id_input(self, auto_clear=False):
+        self.delay(1)
         text = self.InputID.text()
         if auto_clear:
             self.InputID.clear()
@@ -348,14 +347,14 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         pass
 
     # TODO: complete here
-    def park_control(self, method):
+    def park_control(self, method, currentID):
         '''
         '''
         if method == 'pay':
             # tru tien tai khoan
             ticket = Parking.price
             # cap nhat self.MoneyLeft toi so du hien tai
-            idx = self.table['account']['ID'].index(self.currentID)
+            idx = self.table['account']['ID'].index(currentID)
             self.current_money = self.table['account']['money_left'][idx] - ticket
         elif method == 'open left':
             # mo cong vao
@@ -388,11 +387,15 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     # TODO: complete here
     @pyqtSlot(np.ndarray, list)
     def program_pipeline(self, frame=None, plate_info=None):
-        #! reset all value
+        # ! reset all value
         id_exist = False
         plate_exist = False
         plate_in = False
-        self.currentID = self.get_id_input()
+        currentID = self.get_id_input()
+
+        if currentID:
+            while len(currentID) < 10:
+                currentID += self.get_id_input()
 
         try:
             assert frame is not None, "Camera source is not found"
@@ -400,15 +403,16 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             self.camera_screen(frame)
             plate, plate_ids, conf = plate_info
 
-            if self.currentID:
-                print(f'[INFO] currentID: {self.currentID}')
-                if self.currentID in self.table['database']['ID']:
+            if currentID:
+                print(f'[INFO] currentID: {currentID}')
+                if currentID in self.table['database']['ID']:
                     id_exist = True
-                #     idx = self.table['database']['ID'].index(self.currentID)
-                #     plate_in_img = cv2.imread(self.table['database']['plate_path'][idx])
-                #     # * 2. update vao view out
-                #     self.update_extracted_image('view_out', plate_in_img)
-                # print(self.table['account']['money_left'][self.table['account']['ID'].index(self.currentID)])
+                    idx = self.table['database']['ID'].index(currentID)
+                    plate_in_img = cv2.imread(self.table['database']['plate_path'][idx])
+                    # * 2. update vao view out
+                    self.update_extracted_image('view_out', plate_in_img)
+                    # print tien con lai trong tai khoan
+                    print(self.table['account']['money_left'][self.table['account']['ID'].index(currentID)])
 
             if plate_ids and conf > 0.5:
                 print(f'[INFO] plate_ids: {plate_ids}')
@@ -435,13 +439,13 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     self.update_color_led_label('Verify', 'green')
                     self.update_color_led_label('ledTrigger', 'red')
                     # * 5. tru tien tai khoan park_control(pay)
-                    self.park_control('pay')
+                    self.park_control('pay', currentID)
                     # * 6. truyen tin hieu mo cong ben phai park_control(open right)
-                    self.park_control('open right')
+                    self.park_control('open right', currentID)
                     # * 7. update led of monley_left
                     self.update_lcd_led('MoneyLeft', self.current_money)
                     # * 8. xoa khoi database by database_handle(remove)
-                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate, mode='remove')
+                    self.database_handle(id=currentID, plate_num=plate_ids, plate=plate, mode='remove')
                     # * 9. delay 3s
                     self.delay(3)
                     # * 10. update slots count (so xe hien tai trong bai)
@@ -458,9 +462,9 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     # * 3. update label extractedInfo to plate id
                     self.update_label('extractedInfo', f'{plate_ids}')
                     # * 4. truyen tin hieu mo cong ben trai park_control(open left)
-                    self.park_control('open left')
+                    self.park_control('open left', currentID)
                     # * 5. them vao database by database_handle(add)
-                    self.database_handle(id=self.currentID, plate_num=plate_ids, plate=plate, mode='add')
+                    self.database_handle(id=currentID, plate_num=plate_ids, plate=plate, mode='add')
                     # * 6. update led of monley_left
                     self.update_lcd_led('MoneyLeft', self.current_money)
                     # * 7. update led slot count
@@ -471,11 +475,13 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 khong co xe nao vao vung camera 
                 1. update 2 led label verify -> white and ledTrigger -> white
                 """
-                self.update_color_led_label('Verify', 'white')
-                self.update_color_led_label('ledTrigger', 'white')
+                # self.update_color_led_label('Verify', 'white')
+                # self.update_color_led_label('ledTrigger', 'white')
+                pass
 
             # * update_tracking_plc_table in gui
             # self.update_tracking_plc_table()
+
             self.InputID.clear()
 
         except Exception as e:
