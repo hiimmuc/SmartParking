@@ -447,7 +447,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     # * 6. truyen tin hieu mo cong ben phai park_control(open right)
                     slot_now = self.park_control('open right', self.currentID)
                     # * 7. update led of monley_left
-                    self.update_lcd_led('MoneyLeft', self.current_money)
+                    # self.update_lcd_led('MoneyLeft', self.current_money)
                     # * 8. xoa khoi database by database_handle(remove)
                     self.database_handle(id=self.currentID,
                                          plate_num=plate_ids,
@@ -481,7 +481,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                                          save_path=save_path,
                                          mode='add')
                     # * 6. update led of monley_left
-                    self.update_lcd_led('MoneyLeft', self.current_money)
+                    # self.update_lcd_led('MoneyLeft', self.current_money)
                     # * 7. update led slot count
                     # self.update_lcd_led('default')
                     self.update_lcd_led('SlotCount', slot_now)
