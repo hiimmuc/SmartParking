@@ -36,7 +36,7 @@ class VideoThread(QThread):
                                                                     preprocess=True)
 
                 self.change_pixmap_signal.emit(frame, [plate, plate_id, conf])
-
+                self.startTimer(10)
                 self.fps.update()
         self.fps.stop()
 
