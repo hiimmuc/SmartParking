@@ -2,7 +2,6 @@ import os
 import sys
 from pathlib import Path
 
-import cv2
 import pandas as pd
 from PyQt5.QtCore import Qt, pyqtSlot
 from PyQt5.QtGui import QPixmap
@@ -265,11 +264,12 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         text = self.InputID.text()
         if auto_clear:
             self.InputID.clear()
-        return text if len(text) > 0 else None
+        return text if len(text) > 0 else ''
+
 
     def database_handle(self, id=0, plate_num=None, plate=None, mode='add'):
         if mode == 'add':
-            save_path = str(Path(self.root_dir, f"{plate_num}.jpg"))
+            save_path = str(Path(self.root_dir, f"saved_plate_img/{plate_num.strip()}.jpg"))
 
             self.table['database']['ID'].append(id)
             self.table['database']['plate_id'].append(plate_num)
@@ -278,7 +278,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
             self.write_csv('database')
         if mode == 'remove':
-            save_path = str(Path(self.root_dir, f"{plate_num}.jpg"))
+            save_path = str(Path(self.root_dir, f"saved_plate_img/{plate_num.strip()}.jpg"))
 
             self.table['database']['ID'].remove(id)
             self.table['database']['plate_id'].remove(plate_num)
@@ -388,11 +388,12 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     # TODO: complete here
     @pyqtSlot(np.ndarray, list)
     def program_pipeline(self, frame=None, plate_info=None):
-        #! reset all value
+        # ! reset all value
         id_exist = False
         plate_exist = False
         plate_in = False
         self.currentID = self.get_id_input()
+        self.msleep(1)
 
         try:
             assert frame is not None, "Camera source is not found"
@@ -401,9 +402,10 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             plate, plate_ids, conf = plate_info
 
             if self.currentID:
-                print(f'[INFO] currentID: {self.currentID}')
-                if self.currentID in self.table['database']['ID']:
-                    id_exist = True
+                print(f"[INFO] currentID: {self.currentID}")
+                print('\n' in self.currentID)
+                # if self.currentID in self.table['database']['ID']:
+                #     id_exist = True
                 #     idx = self.table['database']['ID'].index(self.currentID)
                 #     plate_in_img = cv2.imread(self.table['database']['plate_path'][idx])
                 #     # * 2. update vao view out
