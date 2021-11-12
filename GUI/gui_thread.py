@@ -1,10 +1,11 @@
+import os
+
 import cv2
 import numpy as np
 from imutils.video import FPS
 from LicenseDetection import *
 from LicenseRecognition import LicenseRecognizer
 from PyQt5.QtCore import QThread, pyqtSignal
-import os
 
 
 class VideoThread(QThread):
@@ -34,7 +35,7 @@ class VideoThread(QThread):
                     plate, plate_id, conf = self.model.extract_info(frame,
                                                                     detection=True,
                                                                     ocr=True,
-                                                                    preprocess=True)
+                                                                    preprocess=False)
 
                 self.change_pixmap_signal.emit(frame, [plate, plate_id, conf])
                 self.fps.update()

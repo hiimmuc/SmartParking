@@ -8,3 +8,5 @@ D1001,1001,reg
 D1002,1002,reg
 m11,11,coil
 m12,12,coil
+barLeft,3,coil
+barRight,4,coil

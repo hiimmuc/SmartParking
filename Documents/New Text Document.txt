@@ -1,9 +1,0 @@
-Danh sách thiết bị phần cứng :
-+)PLC S7-1200 (CPU-1214c)
-+)Webcam logitech c270
-+)Adruno-RFID
-****Kết nối truyền thông qua lap*****
-
-+)Biển số xe (in giấy 3*4) 
-+)Khung bãi gửi xe gồm 3 hàng * 3 cột -->9 vị trí
- 

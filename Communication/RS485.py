@@ -1,5 +1,6 @@
 # TODO: connect with plc via rs485, modbus rtu
 
+import easymodbus.modbusClient
 from easymodbus.modbusClient import ModbusClient
 
 
@@ -76,3 +77,11 @@ class RS485:
                 return plc.read_coils(address, 1)[0]
         except Exception as e:
             print(e)
+
+
+if __name__ == '__main__':
+    rs = RS485(port=5)
+    rs.check_connection()
+    # print(rs.connected_to_plc)
+    rs.write('coil', 2, 1)
+    print(rs.read('coil', 2))

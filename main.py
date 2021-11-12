@@ -15,7 +15,7 @@ from LicenseRecognition import LicenseRecognizer
 
 class Pipeline:
     def __init__(self) -> None:
-        self.rs485 = RS485()
+        self.rs485 = RS485(port=5)
         self.recognizer = LicenseRecognizer()
         self.app = QtWidgets.QApplication(sys.argv)
         self.MainWindow = QtWidgets.QMainWindow()

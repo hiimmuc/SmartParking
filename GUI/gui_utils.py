@@ -85,6 +85,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     def start_program(self):
         self.init_all_table()
         self.update_lcd_led()
+        self.rs485_pipe.check_connection()
+        self.rs485_connected = self.rs485_pipe.connected_to_plc
 
         self.thread.start()
         self.running = True
@@ -188,11 +190,12 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 table_name = 'plc'
                 table = self.tableWidget
                 # read value from plc and update tracking values
-                for i in range(len(self.table[table_name]['name'])):
+                for i, name in enumerate(self.table[table_name]['name']):
                     address = int(self.table[table_name]['address'][i])
                     type_ = self.table[table_name]['type'][i]
                     values = self.rs485_pipe.read(type_, address)
 
+                    table.setItem(i, 0, QTableWidgetItem(f"{name}"))
                     table.setItem(i, 1, QTableWidgetItem(f"{values}"))
             else:
                 self.popup_msg("Com is not connect", src_msg='update_tracking_table', type_msg='warning')
@@ -342,14 +345,19 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             # mo cong vao
             self.current_slot_num += 1
             # >> Truyen tin hieu mo cong ben trai (cong ra) xuong plc
-            # self.rs485_pipe.write(b'10')
+            self.rs485_pipe.write('coil', 3, 1)
             return self.current_slot_num
         elif method == 'open right':
             # mo cong ra
             self.current_slot_num -= 1
             # >> Truyen tin hieu mo cong ben phai (cong vao) xuong plc
-            # self.rs485_pipe.write(b'11')
+            self.rs485_pipe.write('coil', 4, 1)
             return self.current_slot_num
+
+        elif method == 'close left':
+            self.rs485_pipe.write('coil', 3, 0)
+        elif method == 'close right':
+            self.rs485_pipe.write('coil', 4, 0)
 
     def image_flow(self, image, image_path, mode='save'):
         '''control flow of image to communicate with excel and backup folder
@@ -379,10 +387,10 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         current_money = 0
 
         ID = self.get_id_input()
-
+        # ! check here again
         if ID != self.currentID:
             if frame is not None:
-                default_frame = np.zeros_like(frame)
+                default_frame = np.ones_like(frame)
                 self.update_extracted_image('view_in', default_frame)
                 self.update_extracted_image('view_out', default_frame)
             self.currentID = ID
@@ -420,10 +428,9 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 save_path = str(Path(self.root_dir, 'saved_plate_img',  f"{str(plate_ids)}.jpg"))
                 if plate_ids in self.table['database']['plate_id']:
                     plate_exist = True
-                    self.image_flow(self.current_plate, save_path, mode='delete')
                 else:
                     plate_exist = False
-                    self.image_flow(self.current_plate, save_path, mode='save')
+
             else:
                 self.plate_in = False
 
@@ -453,6 +460,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                                          plate_num=plate_ids,
                                          save_path=save_path,
                                          mode='remove')
+                    self.image_flow(self.current_plate, save_path, mode='delete')
                     # * 9. delay 3s
                     # self.delay(1)
                     # * 10. update slots count (so xe hien tai trong bai)
@@ -466,7 +474,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
                     # * 1. update anh camera quay duoc len view in, den khi co anh moi thi moi doi anh
                     self.update_extracted_image('view_in', self.current_plate)
-                    default_frame = np.zeros_like(frame)
+                    default_frame = np.ones_like(frame)
                     self.update_extracted_image('view_out', default_frame)
                     # * 2. update led label verify -> red and ledTrigger -> green
                     self.update_color_led_label('Verify', 'red')
@@ -480,6 +488,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                                          plate_num=plate_ids,
                                          save_path=save_path,
                                          mode='add')
+                    self.image_flow(self.current_plate, save_path, mode='save')  # luu hinh anh lai
                     # * 6. update led of monley_left
                     # self.update_lcd_led('MoneyLeft', self.current_money)
                     # * 7. update led slot count
@@ -489,6 +498,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     self.plate_in = False
                     self.got_id = False
 
+                self.update_tracking_plc_table()
+
             else:
                 """
                 khong co xe nao vao vung camera 
@@ -496,9 +507,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 """
                 self.update_color_led_label('Verify', 'white')
                 self.update_color_led_label('ledTrigger', 'white')
+                self.park_control('close_left', 0)
+                self.park_control('close_rigth', 0)
 
             # * update_tracking_plc_table in gui
-            # self.update_tracking_plc_table()
+
             if len(self.currentID) >= 10:
                 self.InputID.clear()
 
