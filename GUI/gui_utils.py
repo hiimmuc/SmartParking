@@ -58,7 +58,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
         self.is_error = False
         self.running = False
-        self.current_slot_num = 37
+        self.current_slot_num = 0
         self.max_slots = 99
         self.current_frame = None
         self.current_money = 0
@@ -66,6 +66,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.current_plate = None
         self.got_id = False
         self.plate_in = False
+        self.fps = 0
+        self.bar_closed = [True, True]  # 0 for left 1 for right
 
         # timer for reading step
         self.timer = QtCore.QTimer()
@@ -85,9 +87,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
     def start_program(self):
         self.init_all_table()
         self.update_lcd_led()
+        # check rs485
         self.rs485_pipe.check_connection()
         self.rs485_connected = self.rs485_pipe.connected_to_plc
-
+        self.update_tracking_plc_table()
+        # run video`
         self.thread.start()
         self.running = True
 
@@ -346,17 +350,21 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             self.current_slot_num += 1
             # >> Truyen tin hieu mo cong ben trai (cong ra) xuong plc
             self.rs485_pipe.write('coil', 3, 1)
+            self.bar_closed[0] = False
             return self.current_slot_num
         elif method == 'open right':
             # mo cong ra
             self.current_slot_num -= 1
             # >> Truyen tin hieu mo cong ben phai (cong vao) xuong plc
             self.rs485_pipe.write('coil', 4, 1)
+            self.bar_closed[1] = False
             return self.current_slot_num
 
         elif method == 'close left':
             self.rs485_pipe.write('coil', 3, 0)
+            self.bar_closed[0] = True
         elif method == 'close right':
+            self.bar_closed[1] = True
             self.rs485_pipe.write('coil', 4, 0)
 
     def image_flow(self, image, image_path, mode='save'):
@@ -387,13 +395,14 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         current_money = 0
 
         ID = self.get_id_input()
+
         # ! check here again
         if ID != self.currentID:
-            if frame is not None:
+            if frame is not None and self.got_id:
                 default_frame = np.ones_like(frame)
                 self.update_extracted_image('view_in', default_frame)
                 self.update_extracted_image('view_out', default_frame)
-            self.currentID = ID
+            # self.currentID = ID
 
         try:
             assert frame is not None, "Camera source is not found"
@@ -403,7 +412,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             os.makedirs(Path(self.root_dir, 'saved_plate_img'), exist_ok=True)
 
             # validate ID
-            if len(self.currentID) == 10:
+            if len(ID) == 10:
+                self.currentID = ID
                 self.got_id = True
                 print(f'[INFO] currentID: {self.currentID}')
 
@@ -507,12 +517,21 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 """
                 self.update_color_led_label('Verify', 'white')
                 self.update_color_led_label('ledTrigger', 'white')
-                self.park_control('close_left', 0)
-                self.park_control('close_rigth', 0)
+                # check if the bars are closed, if not, close all:
+                if not self.bar_closed[0] or not self.bar_closed[1]:
+                    self.park_control('close left', 0)
+                    self.park_control('close right', 0)
 
-            # * update_tracking_plc_table in gui
+            # # * update_tracking_plc_table in gui
+            # ! Bug: It lead to lagging each time when update_tracking_plc_table is called
+            # if self.fps % 60 == 0:
+            #     self.update_tracking_plc_table()
+            #     print(f'[INFO] update_tracking_plc_table/ FPS = ', self.fps)
+            #     self.fps = 0
+            # self.fps += 1
 
-            if len(self.currentID) >= 10:
+            if len(ID) >= 10:
+                # when receive all 10 digits of ID, then clear
                 self.InputID.clear()
 
         except Exception as e:
