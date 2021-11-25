@@ -9,3 +9,8 @@ Main function: <br/>
 
 model weight
 https://drive.google.com/file/d/1gdKWeb6EFlpq8sQtu8CTiL1mtHfFtL0Y/view?usp=sharing
+
+chinh sua:
+
+- So luong slot la co dinh, khi ma co xe ra thi slot de trong, => them id slot vao data base. khi co xe moi vao se dc phan vao cac slot
+- truyen dia chi slot xuong vd: 91 la slot 9 xe vao, 90 la slot 9 xe ra

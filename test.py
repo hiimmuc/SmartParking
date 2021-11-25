@@ -1,3 +1,5 @@
+import pandas as pd
+
 from LicenseRecognition import *
 
 
@@ -33,5 +35,8 @@ def model():
 
 
 if __name__ == "__main__":
-    model()
+    # model()
+    a = pd.read_csv("backup/database.csv")
+    if a['ID'][0] == ' ':
+        print(a['ID'][0])
     pass

@@ -59,7 +59,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.is_error = False
         self.running = False
         self.current_slot_num = 0
-        self.max_slots = 99
+        self.max_slots = 9
         self.current_frame = None
         self.current_money = 0
         self.currentID = None
@@ -73,9 +73,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.timer = QtCore.QTimer()
 
         # Table
-        self.table = {'database': {'ID': [],
-                                   'plate_id': [],
-                                   'plate_path': []},
+        self.table = {'database': {},
                       'account': {'ID': [],
                                   'money_left': []},
                       'plc': {}}
@@ -218,9 +216,12 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             csv_path = Path(self.root_dir, f"{table_name}.csv")
             data = pd.read_csv(csv_path, converters={i: str for i in range(0, self.max_slots)})
             if table_name == 'database':
+                self.table[table_name]['Index'] = list(data['Index'])
                 self.table[table_name]['ID'] = list(data['ID'])
                 self.table[table_name]['plate_id'] = list(data['plate_id'])
                 self.table[table_name]['plate_path'] = list(data['plate_path'])
+                self.max_slots = len(self.table[table_name]['Index'])
+                print(self.table[table_name])
             elif table_name == 'account':
                 self.table[table_name]['ID'] = list(data['ID'])
                 self.table[table_name]['money_left'] = list(data['money_left'])
@@ -239,6 +240,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             table_name (dict):  data to write
         '''
         try:
+            print(self.table[table_name])
             df = pd.DataFrame.from_dict(self.table[table_name])
             csv_path = str(Path(self.root_dir, f"{table_name}.csv"))
             df.to_csv(csv_path, sep=',', index=False)
@@ -261,19 +263,29 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
     def database_handle(self, id=0, plate_num=None, save_path='', mode='add'):
         if mode == 'add':
-            self.table['database']['ID'].append(id)
-            self.table['database']['plate_id'].append(plate_num)
-            self.table['database']['plate_path'].append(save_path)
+            idx = self.slots_control()[0]  # take first available slot
+            print((self.current_slot_num, self.max_slots))
+            if self.current_slot_num < self.max_slots:
+                self.table['database']['ID'][idx] = id
+                self.table['database']['plate_id'][idx] = plate_num
+                self.table['database']['plate_path'][idx] = save_path
+            else:
+                self.popup_msg('Database is full', 'database_handle', 'warning')
+                self.park_control('close left', 0)
+                self.park_control('close right', 0)
 
             self.write_csv('database')
+            return idx
+
         if mode == 'remove':
-            idx = self.table['database']['ID'].index(id)
 
-            self.table['database']['ID'].remove(self.table['database']['ID'][idx])
-            self.table['database']['plate_id'].remove(self.table['database']['plate_id'][idx])
-            self.table['database']['plate_path'].remove(self.table['database']['plate_path'][idx])
+            idx = self.table['database']['ID'].index(id)
+            self.table['database']['ID'][idx] = ' '
+            self.table['database']['plate_id'][idx] = ' '
+            self.table['database']['plate_path'][idx] = ' '
 
             self.write_csv('database')
+            return idx
 
     # +++++++++++++++++++++++++++++++++++ Utils function ++++++++++++++++++++++++++++++++++++++++++
 
@@ -295,8 +307,9 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
         if mode == 'default':
             lcd_box['MoneyLeft'].display(00000)
-            self.current_slot_num = len(self.table['database']['ID'])
-            self.max_slots = len(self.table['account']['ID'])
+
+            self.current_slot_num = self.max_slots - len(self.slots_control())
+            # self.max_slots = len(self.table['account']['ID'])
             lcd_box['SlotCount'].display(self.current_slot_num)
             lcd_box['TotalSlot'].display(self.max_slots)
 
@@ -333,7 +346,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         pass
 
     # TODO: complete here
-    def park_control(self, method, currentID):
+    def park_control(self, method, currentID, idx=None):
         '''
         '''
         if method == 'pay':
@@ -345,27 +358,33 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             self.table['account']['money_left'][idx] = current_money
             self.write_csv('account')
             return current_money
-        elif method == 'open left':
-            # mo cong vao
-            self.current_slot_num += 1
-            # >> Truyen tin hieu mo cong ben trai (cong ra) xuong plc
-            self.rs485_pipe.write('coil', 3, 1)
-            self.bar_closed[0] = False
-            return self.current_slot_num
-        elif method == 'open right':
-            # mo cong ra
-            self.current_slot_num -= 1
-            # >> Truyen tin hieu mo cong ben phai (cong vao) xuong plc
-            self.rs485_pipe.write('coil', 4, 1)
-            self.bar_closed[1] = False
-            return self.current_slot_num
 
-        elif method == 'close left':
-            self.rs485_pipe.write('coil', 3, 0)
-            self.bar_closed[0] = True
-        elif method == 'close right':
-            self.bar_closed[1] = True
-            self.rs485_pipe.write('coil', 4, 0)
+        if idx is not None:
+            idx += 1
+            if method == 'open left':
+                # mo cong vao
+                self.current_slot_num += 1
+                # >> Truyen tin hieu mo cong ben trai (cong ra) xuong plc
+                msg = idx * 100 + 11
+                self.bar_closed[0] = False
+                return self.current_slot_num
+
+            elif method == 'open right':
+                # mo cong ra
+                self.current_slot_num -= 1
+                # >> Truyen tin hieu mo cong ben phai (cong vao) xuong plc
+                msg = idx * 100 + 1
+                self.bar_closed[1] = False
+                return self.current_slot_num
+
+            elif method == 'close left':
+                msg = idx * 100 + 10
+                self.bar_closed[0] = True
+            elif method == 'close right':
+                msg = idx * 100 + 0
+                self.bar_closed[1] = True
+
+            self.rs485_pipe.write('reg', 200, msg)
 
     def image_flow(self, image, image_path, mode='save'):
         '''control flow of image to communicate with excel and backup folder
@@ -385,9 +404,17 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             if os.path.exists(image_path):
                 os.remove(image_path)
 
+    def slots_control(self):
+        remain_slots = []
+        for i in range(len(self.table['database']['ID'])):
+            if self.table['database']['ID'][i] == ' ':
+                remain_slots.append(i)
+        return remain_slots
+
     # +++++++++++++++++++++++++++++++++++ program pipeline ++++++++++++++++++++++++++++++++++++++++++
     # TODO: complete here
-    @pyqtSlot(np.ndarray, list)
+
+    @ pyqtSlot(np.ndarray, list)
     def program_pipeline(self, frame=None, plate_info=None):
         # !reset all values
         id_exist = False
@@ -461,18 +488,18 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     self.update_color_led_label('ledTrigger', 'red')
                     # * 5. tru tien tai khoan park_control(pay)
                     # self.park_control('pay', currentID)
-                    # * 6. truyen tin hieu mo cong ben phai park_control(open right)
-                    slot_now = self.park_control('open right', self.currentID)
-                    # * 7. update led of monley_left
+
+                    # * 6. update led of monley_left
                     # self.update_lcd_led('MoneyLeft', self.current_money)
-                    # * 8. xoa khoi database by database_handle(remove)
-                    self.database_handle(id=self.currentID,
-                                         plate_num=plate_ids,
-                                         save_path=save_path,
-                                         mode='remove')
+                    # * 7. xoa khoi database by database_handle(remove)
+                    rm_idx = self.database_handle(id=self.currentID,
+                                                  plate_num=plate_ids,
+                                                  save_path=save_path,
+                                                  mode='remove')
+                    # * 8. truyen tin hieu mo cong ben phai park_control(open right)
+                    slot_now = self.park_control('open right', self.currentID, idx=rm_idx)
+                    # * 9. remove image view
                     self.image_flow(self.current_plate, save_path, mode='delete')
-                    # * 9. delay 3s
-                    # self.delay(1)
                     # * 10. update slots count (so xe hien tai trong bai)
                     # self.update_lcd_led(mode='default')
                     self.update_lcd_led('SlotCount', slot_now)
@@ -491,17 +518,18 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     self.update_color_led_label('ledTrigger', 'green')
                     # * 3. update label extractedInfo to plate id
                     self.update_label('extractedInfo', f'{plate_ids}')
-                    # * 4. truyen tin hieu mo cong ben trai park_control(open left)
-                    slot_now = self.park_control('open left', self.currentID)
-                    # * 5. them vao database by database_handle(add)
-                    self.database_handle(id=self.currentID,
-                                         plate_num=plate_ids,
-                                         save_path=save_path,
-                                         mode='add')
+                    # * 4. them vao database by database_handle(add)
+                    add_idx = self.database_handle(id=self.currentID,
+                                                   plate_num=plate_ids,
+                                                   save_path=save_path,
+                                                   mode='add')
+                    # * 5. truyen tin hieu mo cong ben trai park_control(open left)
+                    slot_now = self.park_control('open left', self.currentID, idx=add_idx)
+                    # * 6. add image view
                     self.image_flow(self.current_plate, save_path, mode='save')  # luu hinh anh lai
-                    # * 6. update led of monley_left
-                    # self.update_lcd_led('MoneyLeft', self.current_money)
-                    # * 7. update led slot count
+                    # * 7. update led of monley_left
+                    # self.update_lcd_led('MoneyLeft', self.current_money), done above
+                    # * 8. update led slot count
                     # self.update_lcd_led('default')
                     self.update_lcd_led('SlotCount', slot_now)
 
@@ -512,7 +540,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
             else:
                 """
-                khong co xe nao vao vung camera 
+                khong co xe nao vao vung camera
                 1. update 2 led label verify -> white and ledTrigger -> white
                 """
                 self.update_color_led_label('Verify', 'white')
@@ -521,14 +549,6 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 if not self.bar_closed[0] or not self.bar_closed[1]:
                     self.park_control('close left', 0)
                     self.park_control('close right', 0)
-
-            # # * update_tracking_plc_table in gui
-            # ! Bug: It lead to lagging each time when update_tracking_plc_table is called
-            # if self.fps % 60 == 0:
-            #     self.update_tracking_plc_table()
-            #     print(f'[INFO] update_tracking_plc_table/ FPS = ', self.fps)
-            #     self.fps = 0
-            # self.fps += 1
 
             if len(ID) >= 10:
                 # when receive all 10 digits of ID, then clear
