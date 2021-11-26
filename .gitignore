@@ -8,4 +8,5 @@ Downloads/
 backup/model
 backup/Number Plate Dataset
 backup/*.jpg
+backup/**/*.jpg
 *.zip

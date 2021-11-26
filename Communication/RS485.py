@@ -1,6 +1,3 @@
-# TODO: connect with plc via rs485, modbus rtu
-
-import easymodbus.modbusClient
 from easymodbus.modbusClient import ModbusClient
 
 
@@ -13,7 +10,8 @@ class RS485:
         self.is_rtu = is_rtu
 
     def check_connection(self):
-        #  check connection
+        '''check connection to plc
+        '''
         try:
             if self.is_rtu:
                 plc = ModbusClient(f'COM{self.port}')
@@ -26,6 +24,13 @@ class RS485:
             self.connected_to_plc = False
 
     def write(self, type_, address, value):
+        '''write data to plc with type and address defined
+
+        Args:
+            type_ (str): type of place, available: reg, coil.
+            address (int): address of where to write. eg. 1, 2, 3.
+            value (int): value of data in decimal. eg. 1, 2, 3.
+        '''
         try:
             #  check connection
             plc = None
@@ -85,3 +90,6 @@ if __name__ == '__main__':
     # print(rs.connected_to_plc)
     rs.write('coil', 2, 1)
     print(rs.read('coil', 2))
+    rs.write('reg', 200, 1)
+    print(rs.read('hr', 200))
+    print(rs.read('ir', 200))

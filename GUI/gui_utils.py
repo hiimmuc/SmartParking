@@ -59,7 +59,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.is_error = False
         self.running = False
         self.current_slot_num = 0
-        self.max_slots = 9
+        self.max_slots = 3
         self.current_frame = None
         self.current_money = 0
         self.currentID = None
