@@ -361,6 +361,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
         if idx is not None:
             idx += 1
+            msg = 0
             if method == 'open left':
                 # mo cong vao
                 self.current_slot_num += 1
@@ -458,7 +459,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 self.got_id = False
 
             # validate plate
-            if plate_ids and conf > 0.5:
+            if plate_ids and conf > 0.6:
                 self.plate_in = True
                 print(f'[INFO] plate_ids: {plate_ids}, {conf}')
 
