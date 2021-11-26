@@ -10,9 +10,8 @@ from LicenseDetection import *
 from LicenseOCR import *
 from LicenseRecognition import LicenseRecognizer
 
+
 # *DESC* implement all things :v
-
-
 class Pipeline:
     def __init__(self) -> None:
         self.rs485 = RS485(port=5)

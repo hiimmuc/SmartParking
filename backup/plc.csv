@@ -2,3 +2,4 @@ name,address,type
 barLeft,3,coil
 barRight,4,coil
 MSG,200,hr
+flag,101,coil
