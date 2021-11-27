@@ -1,10 +1,7 @@
-import os
-
 import cv2
 import numpy as np
 from imutils.video import FPS
 from LicenseDetection import *
-from LicenseRecognition import LicenseRecognizer
 from PyQt5.QtCore import QThread, pyqtSignal
 
 
@@ -16,7 +13,7 @@ class VideoThread(QThread):
         self.run_flag = True
         self.source = source
 
-        # initmodel here
+        # initialize model here
         self.model = recognizer_model
 
     def run(self):
