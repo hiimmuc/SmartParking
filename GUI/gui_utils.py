@@ -59,6 +59,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
         self.is_error = False
         self.running = False
+        self.idle_count = 0
         self.current_slot_num = 0
         self.max_slots = 3
         self.currentID = None
@@ -170,6 +171,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         """Read data from PLC and update the tracking table widget in UI widget.
         """
         try:
+
             if self.rs485_connected:
                 table_name = 'plc'
                 table = self.tableWidget
@@ -349,45 +351,41 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         '''
         pass
 
-    def park_control(self, method, currentID, idx=None):
-        if method == 'pay':
-            # tru tien tai khoan
-            ticket = Parking.price
-            # cap nhat self.MoneyLeft toi so du hien tai
-            idx = self.table['account']['ID'].index(currentID)
-            current_money = str(int(self.table['account']['money_left'][idx]) - ticket)
+    def pay_money(self, currentID):
+        '''Pay money from account'''
+        # tru tien tai khoan
+        ticket = Parking.price
+        # cap nhat self.MoneyLeft toi so du hien tai
+        idx = self.table['account']['ID'].index(currentID)
+        current_money = str(int(self.table['account']['money_left'][idx]) - ticket)
 
-            self.table['account']['money_left'][idx] = current_money
-            self.write_csv('account')
+        self.table['account']['money_left'][idx] = current_money
+        self.write_csv('account')
 
-            return current_money
+        return current_money
 
+    def park_control(self, state, idx=None):
+        '''control activities of parking lot
+
+        Args:
+            method (str): pay , enter ofr exit
+            currentID (str): id of card
+            idx (int, optional): index of slot. Defaults to None.
+
+        Returns:
+            int: current slot number
+        '''
         if idx is not None:
             idx += 1
             msg = 0
             print('Enter idx not None')
 
-            if method == 'open left':
-                # mo cong vao
+            if state == 'enter':
                 self.current_slot_num += 1
-                # >> Truyen tin hieu mo cong ben trai (cong ra) xuong plc
-                msg = idx * 100 + 11
-                self.bar_closed[0] = False
-
-            elif method == 'open right':
-                # mo cong ra
+                msg = idx * 10 + 1
+            elif state == 'exit':
                 self.current_slot_num -= 1
-                # >> Truyen tin hieu mo cong ben phai (cong vao) xuong plc
-                msg = idx * 100 + 1
-                self.bar_closed[1] = False
-
-            elif method == 'close left':
-                msg = idx * 100 + 10
-                self.bar_closed[0] = True
-
-            elif method == 'close right':
-                msg = idx * 100 + 0
-                self.bar_closed[1] = True
+                msg = idx * 10 + 0
 
             self.rs485_pipe.write('reg', 200, msg)
             return self.current_slot_num
@@ -434,13 +432,14 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 self.update_extracted_image('view_out', default_frame)
 
         try:
-            if not self.processing_flag:
-                assert frame is not None, "Camera source is not found"
-                # show frame from camera
-                self.camera_screen(frame)
-                self.current_plate, plate_ids, conf = plate_info
-                os.makedirs(Path(self.root_dir, 'saved_plate_img'), exist_ok=True)
 
+            assert frame is not None, "Camera source is not found"
+            # show frame from camera
+            self.camera_screen(frame)
+            self.current_plate, plate_ids, conf = plate_info
+            os.makedirs(Path(self.root_dir, 'saved_plate_img'), exist_ok=True)
+
+            if not self.processing_flag:
                 # validate ID
                 if len(ID) == 10:
                     self.currentID = ID
@@ -449,7 +448,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
                     if self.currentID in self.table['database']['ID']:
                         id_exist = True
-                        current_money = self.park_control('pay', self.currentID)
+                        current_money = self.pay_money(self.currentID)
                     else:
                         id_exist = False
                         idx = self.table['account']['ID'].index(self.currentID)
@@ -476,35 +475,38 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
                 # * if vehicle come into camera view and plate is detected
                 if self.plate_in and self.got_id:
-                    if id_exist or plate_exist:
+                    if id_exist and plate_exist:
                         print("[INFO] Xe di ra khoi khu vuc")
                         idx = self.table['database']['ID'].index(self.currentID)
+
                         # * 1. doc anh bien xe luu o database
                         plate_in_img = cv2.imread(self.table['database']['plate_path'][idx])
+
                         # * 2. update vao view out
                         self.update_extracted_image('view_out', plate_in_img)
                         self.update_label('extractedInfo', f'{plate_ids}')
+
                         # * 3. update anh camera quay dc vao view in
                         self.update_extracted_image('view_in', self.current_plate)
-                        # * 4. update led label verify -> green and ledTrigger -> red
+
+                        # * 4. update led label verify -> green
                         self.update_color_led_label('Verify', 'green')
-                        self.update_color_led_label('ledTrigger', 'red')
-                        # * 5. tru tien tai khoan park_control(pay)
-                        # self.park_control('pay', currentID)
-                        # * 6. update led of monley_left
-                        # self.update_lcd_led('MoneyLeft', self.current_money)
-                        # * 7. xoa khoi database by database_handle(remove)
+
+                        # * 5. xoa khoi database by database_handle(remove)
                         rm_idx = self.database_handle(id=self.currentID,
                                                       plate_num=plate_ids,
                                                       save_path=save_path,
                                                       mode='remove')
-                        # * 8. truyen tin hieu mo cong ben phai park_control(open right)
-                        slot_now = self.park_control('open right', self.currentID, idx=rm_idx)
-                        # * 9. remove image view
+
+                        # * 6. truyen tin hieu mo cong ben phai park_control(open right)
+                        slot_now = self.park_control(state='exit', idx=rm_idx)
+
+                        # * 7. remove image view
                         self.image_flow(self.current_plate, save_path, mode='delete')
-                        # * 10. update slots count (so xe hien tai trong bai)
-                        # self.update_lcd_led(mode='default')
+
+                        # * 8. update slots count (so xe hien tai trong bai)
                         self.update_lcd_led('SlotCount', slot_now)
+
                         self.plate_in = False
                         self.got_id = False
 
@@ -515,49 +517,55 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                         self.update_extracted_image('view_in', self.current_plate)
                         default_frame = np.ones_like(frame)
                         self.update_extracted_image('view_out', default_frame)
-                        # * 2. update led label verify -> red and ledTrigger -> green
-                        self.update_color_led_label('Verify', 'red')
+
+                        # * 2. update led label verify -> red
+                        self.update_color_led_label('Verify', 'yellow')
+
                         self.update_color_led_label('ledTrigger', 'green')
+
                         # * 3. update label extractedInfo to plate id
                         self.update_label('extractedInfo', f'{plate_ids}')
+
                         # * 4. them vao database by database_handle(add)
                         add_idx = self.database_handle(id=self.currentID,
                                                        plate_num=plate_ids,
                                                        save_path=save_path,
                                                        mode='add')
+
                         # * 5. truyen tin hieu mo cong ben trai park_control(open left)
-                        slot_now = self.park_control('open left', self.currentID, idx=add_idx)
+                        slot_now = self.park_control(state='enter', idx=add_idx)
+
                         # * 6. add image view
-                        self.image_flow(self.current_plate, save_path, mode='save')  # luu hinh anh lai
-                        # * 7. update led of monley_left
-                        # self.update_lcd_led('MoneyLeft', self.current_money), done above
-                        # * 8. update led slot count
-                        # self.update_lcd_led('default')
+                        self.image_flow(self.current_plate, save_path, mode='save')
+
+                        # * 7. update led slot count
                         self.update_lcd_led('SlotCount', slot_now)
-                        # * 9. bat bit flag
+
+                        # * 8. bat bit flag
                         self.rs485_pipe.write('coil', 101, 1)
 
-                        #
+                        self.processing_flag = True
+
                         self.plate_in = False
                         self.got_id = False
 
                     self.update_tracking_plc_table()
 
-                else:
-                    """
-                    khong co xe nao vao vung camera
-                    1. update 2 led label verify -> white and ledTrigger -> white
-                    """
-                    self.update_color_led_label('Verify', 'white')
-                    self.update_color_led_label('ledTrigger', 'white')
-                    # check if the bars are closed, if not, close all:
-                    if not self.bar_closed[0] or not self.bar_closed[1]:
-                        self.park_control('close left', 0)
-                        self.park_control('close right', 0)
-
                 if len(ID) >= 10:
-                    # when receive all 10 digits of ID, then clear
+                    # >> when receive all 10 digits of ID, then clear
                     self.InputID.clear()
+
+                self.update_color_led_label('ledTrigger', 'yellow')
+
+            else:
+                # >> to notice that processing is running and wait for next turn
+                self.update_color_led_label('ledTrigger', 'red')
+
+                if self.idle_count > 30:
+                    self.update_tracking_plc_table()
+                    self.idle_count = 0
+
+                self.idle_count += 1
 
         except Exception as e:
             self.popup_msg(str(e), 'program_pipeline', 'error')

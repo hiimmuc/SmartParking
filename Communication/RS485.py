@@ -19,11 +19,11 @@ class RS485:
 
             if not plc.is_connected():
                 plc.connect()
-            if plc.is_connected():
-                print("PlC is connected, writing_time")
-                self.connected_to_plc = True
+
+            self.connected_to_plc = True
 
             plc.close()
+
         except Exception as e:
             print(e)
             self.connected_to_plc = False
@@ -47,10 +47,15 @@ class RS485:
             except Exception as e:
                 print("Error", e)
 
+            if not plc.is_connected():
+                plc.connect()
+
             if type_ == 'coil':
                 plc.write_single_coil(address, value)
             elif type_ == 'reg':
                 plc.write_single_register(address, value)
+
+            plc.close()
 
         except Exception as e:
             print(e)
@@ -82,6 +87,9 @@ class RS485:
                 results = plc.read_coils(address, 1)
             else:
                 raise Exception("Wrong type")
+
+            plc.close()
+
             return results[0]
 
         except Exception as e:
@@ -91,9 +99,9 @@ class RS485:
 if __name__ == '__main__':
     rs = RS485(port=5)
     rs.check_connection()
-    # print(rs.connected_to_plc)
-    rs.write('coil', 101, 1)
+    print(rs.connected_to_plc)
+    rs.write('coil', 101, 0)
     print(rs.read('coil', 101))
-    rs.write('reg', 200, 101)
-    print(rs.read('hr', 200))
-    print(rs.read('ir', 200))
+    # rs.write('reg', 200, 101)
+    # print(rs.read('hr', 200))
+    # print(rs.read('ir', 200))
