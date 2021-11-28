@@ -48,6 +48,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.startButton.clicked.connect(self.start_program)
         self.stopButton.clicked.connect(self.stop_program)
         self.InputID.returnPressed.connect(self.get_id_input)
+        self.plateInput.returnPressed.connect(self.get_plate_input)
+        self.confirmButton.clicked.connect(self.confirm_input)
 
         # ===========================================================
 
@@ -63,6 +65,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.current_slot_num = 0
         self.max_slots = 3
         self.currentID = None
+        self.current_plate = None
         self.current_plate = None
         self.got_id = False
         self.plate_in = False
@@ -266,6 +269,29 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             self.InputID.clear()
         return text if len(text) > 0 else ''
 
+    def get_plate_input(self, auto_clear=False):
+        '''get input by reading plate
+
+        Args:
+            auto_clear (bool, optional): wether to clear the input box automatically. Defaults to False.
+
+        Returns:
+            [str]: id got from input box
+        '''
+        text = self.plateInput.text()
+        if auto_clear:
+            self.plateInput.clear()
+        return text if len(text) > 0 else ''
+
+    def confirm_input(self):
+        '''confirm input by reading ID from rfid reader
+
+        Returns:
+            [str]: id got from input box
+        '''
+        text = self.get_plate_input(auto_clear=False)
+        self.current_plate = text
+
     def database_handle(self, id=0, plate_num=None, save_path='', mode='add'):
         '''Handling database.csv
 
@@ -444,6 +470,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 self.update_extracted_image('view_in', default_frame)
                 self.update_extracted_image('view_out', default_frame)
 
+        PLATE_ID = self.get_plate_input()
+
         try:
 
             assert frame is not None, "Camera source is not found"
@@ -460,7 +488,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     print(f'[INFO] currentID: {self.currentID}')
 
                     if self.currentID in self.table['database']['ID']:
-                        # if id in database, in the exit process, pay moent
+                        # if id in database, in the exit process, pay money
                         id_exist = True
 
                     else:
@@ -476,6 +504,16 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     self.plate_in = True
                     print(f'[INFO] plate_ids: {plate_ids}, {round(conf, 3)} %')
 
+                elif len(PLATE_ID) > 0:
+                    self.plate_in = True
+                    print(f'[INFO] plate_ids: {plate_ids}')
+
+                else:
+                    self.plate_in = False
+
+                # check if id and plate exist
+
+                if self.plate_in:
                     save_path = str(Path(self.root_dir, 'saved_plate_img',  f"{str(plate_ids)}.jpg"))
                     if plate_ids in self.table['database']['plate_id']:
                         plate_exist = True
@@ -492,10 +530,11 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     else:
                         plate_exist = False
 
-                else:
-                    self.plate_in = False
+                    # * hien thi bien so ra man hinh
+                    self.update_extracted_image('view_in', self.current_plate)
+                    self.update_label('extractedInfo', f'{plate_ids}')
 
-                if current_money >= 0:
+                if int(current_money) >= 0:
                     self.MoneyLeft.display(current_money)
                 else:
                     self.popup_msg('Not enough money')
@@ -534,6 +573,9 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
                             # * 8. update slots count (so xe hien tai trong bai)
                             self.update_lcd_led('SlotCount', slot_now)
+
+                            # * 9. bat bit flag
+                            self.rs485_pipe.write('coil', 101, 1)
 
                             self.plate_in = False
                             self.got_id = False
@@ -584,7 +626,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
                     else:
                         self.update_color_led_label('Verify', 'red')
-                        self.popup_msg('ID or Plate is wrong !!!')
+                        # self.popup_msg('ID or Plate is wrong !!!')
+                        print("[INFO] ID or Plate is wrong !!!")
 
                     self.update_tracking_plc_table()
 

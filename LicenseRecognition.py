@@ -8,7 +8,7 @@ from LicenseOCR.ocr_utils import *
 
 
 def remove_noiss_characters(text):
-    noise = ['.', "'", '"', ";", ":", ",", "!", "?", "*", "&", "^", "%", "$", "#", "@", "~", "`", "|", "\\", "/", "(", ")", "{", "}", "[", "]"]
+    noise = ['.', "'", '"', ";", ":", ",", "!", "?", "*", "&", "^", "%", "$", "#", "@", "~", "`", "|", "\\", "/", "(", ")", "{", "}", "[", "]", " ", "-", "+"]
     for char in text:
         if char in noise:
             text = text.replace(char, "")

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'GUI\gui.ui'
+# Form implementation generated from reading ui file 'GUI/gui.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.4
 #
@@ -91,20 +91,26 @@ class Ui_MainWindow(object):
         self.TotalSlot.setObjectName("TotalSlot")
         self.horizontalLayout_2.addWidget(self.TotalSlot)
         self.groupBox_4 = QtWidgets.QGroupBox(self.centralwidget)
-        self.groupBox_4.setGeometry(QtCore.QRect(670, 460, 361, 81))
+        self.groupBox_4.setGeometry(QtCore.QRect(670, 450, 361, 111))
         self.groupBox_4.setObjectName("groupBox_4")
         self.extractedInfo = QtWidgets.QLabel(self.groupBox_4)
-        self.extractedInfo.setGeometry(QtCore.QRect(10, 20, 251, 51))
+        self.extractedInfo.setGeometry(QtCore.QRect(10, 20, 251, 41))
         self.extractedInfo.setAutoFillBackground(True)
         self.extractedInfo.setFrameShape(QtWidgets.QFrame.Box)
         self.extractedInfo.setAlignment(QtCore.Qt.AlignCenter)
         self.extractedInfo.setObjectName("extractedInfo")
         self.VerifyBox = QtWidgets.QLabel(self.groupBox_4)
-        self.VerifyBox.setGeometry(QtCore.QRect(270, 20, 81, 51))
+        self.VerifyBox.setGeometry(QtCore.QRect(270, 20, 81, 41))
         self.VerifyBox.setAutoFillBackground(True)
         self.VerifyBox.setFrameShape(QtWidgets.QFrame.Box)
         self.VerifyBox.setAlignment(QtCore.Qt.AlignCenter)
         self.VerifyBox.setObjectName("VerifyBox")
+        self.plateInput = QtWidgets.QLineEdit(self.groupBox_4)
+        self.plateInput.setGeometry(QtCore.QRect(10, 69, 251, 31))
+        self.plateInput.setObjectName("plateInput")
+        self.confirmButton = QtWidgets.QPushButton(self.groupBox_4)
+        self.confirmButton.setGeometry(QtCore.QRect(270, 70, 75, 31))
+        self.confirmButton.setObjectName("confirmButton")
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
         self.tableWidget.setGeometry(QtCore.QRect(1050, 40, 221, 621))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
@@ -245,6 +251,7 @@ class Ui_MainWindow(object):
         self.groupBox_4.setTitle(_translate("MainWindow", "Plate number"))
         self.extractedInfo.setText(_translate("MainWindow", "Plate number"))
         self.VerifyBox.setText(_translate("MainWindow", "Verify"))
+        self.confirmButton.setText(_translate("MainWindow", "Enter"))
         self.tableWidget.setSortingEnabled(True)
         item = self.tableWidget.verticalHeaderItem(0)
         item.setText(_translate("MainWindow", "1"))
