@@ -66,7 +66,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         self.max_slots = 3
         self.currentID = None
         self.current_plate = None
-        self.current_plate = None
+        self.current_plate_id = None
         self.got_id = False
         self.plate_in = False
         self.bar_closed = [True, True]  # 0 for left 1 for right
@@ -290,7 +290,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             [str]: id got from input box
         '''
         text = self.get_plate_input(auto_clear=False)
-        self.current_plate = text
+        self.current_plate_id = text
 
     def database_handle(self, id=0, plate_num=None, save_path='', mode='add'):
         '''Handling database.csv
@@ -470,7 +470,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                 self.update_extracted_image('view_in', default_frame)
                 self.update_extracted_image('view_out', default_frame)
 
-        PLATE_ID = self.get_plate_input()
+        PLATE_ID = self.current_plate_id
 
         try:
 
@@ -504,9 +504,13 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                     self.plate_in = True
                     print(f'[INFO] plate_ids: {plate_ids}, {round(conf, 3)} %')
 
-                elif len(PLATE_ID) > 0:
-                    self.plate_in = True
-                    print(f'[INFO] plate_ids: {plate_ids}')
+                elif PLATE_ID is not None:
+                    if len(PLATE_ID) > 0:
+                        self.plate_in = True
+                        plate_ids = PLATE_ID
+                        print(f'[INFO] plate_ids: {PLATE_ID}')
+                        self.plateInput.clear()
+                        self.current_plate_id = self.plateInput.text()
 
                 else:
                     self.plate_in = False
@@ -646,7 +650,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             if len(ID) >= 10:
                 # >> when receive all 10 digits of ID, then clear
                 self.InputID.clear()
-
+            PLATE_ID = None
         except Exception as e:
             self.popup_msg(str(e), 'program_pipeline', 'error')
 
