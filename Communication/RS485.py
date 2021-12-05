@@ -100,8 +100,12 @@ if __name__ == '__main__':
     rs = RS485(port=5)
     rs.check_connection()
     print(rs.connected_to_plc)
-    rs.write('coil', 101, 0)
+    # rs.write('coil', 0, 1)
+
+    # rs.write('coil', 101, 1)
     print(rs.read('coil', 101))
-    # rs.write('reg', 200, 101)
-    # print(rs.read('hr', 200))
-    # print(rs.read('ir', 200))
+    print(rs.read('coil', 0))
+
+    # rs.write('reg', 220, 101)
+    # print(rs.read('hr', 220))
+    # print(rs.read('ir', 220))

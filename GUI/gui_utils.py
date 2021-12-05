@@ -584,6 +584,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                             self.plate_in = False
                             self.got_id = False
                             verified = False
+                            PLATE_ID = None
 
                         else:
                             print("The plate number is not same as saved plate")
@@ -627,11 +628,13 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
                         self.plate_in = False
                         self.got_id = False
+                        PLATE_ID = None
 
                     else:
                         self.update_color_led_label('Verify', 'red')
                         # self.popup_msg('ID or Plate is wrong !!!')
                         print("[INFO] ID or Plate is wrong !!!")
+                        PLATE_ID = None
 
                     self.update_tracking_plc_table()
 
@@ -650,7 +653,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             if len(ID) >= 10:
                 # >> when receive all 10 digits of ID, then clear
                 self.InputID.clear()
-            PLATE_ID = None
+
         except Exception as e:
             self.popup_msg(str(e), 'program_pipeline', 'error')
 
