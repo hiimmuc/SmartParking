@@ -102,9 +102,9 @@ if __name__ == '__main__':
     print(rs.connected_to_plc)
     # rs.write('coil', 0, 1)
 
-    # rs.write('coil', 101, 1)
+    rs.write('coil', 101, 0)
     print(rs.read('coil', 101))
-    print(rs.read('coil', 0))
+    # print(rs.read('coil', 0))
 
     # rs.write('reg', 220, 101)
     # print(rs.read('hr', 220))
