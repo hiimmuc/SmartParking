@@ -509,8 +509,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                         self.plate_in = True
                         plate_ids = PLATE_ID
                         print(f'[INFO] plate_ids: {PLATE_ID}')
-                        self.plateInput.clear()
-                        self.current_plate_id = self.plateInput.text()
+                        # self.plateInput.clear()
+                        # self.current_plate_id = self.plateInput.text()
 
                 else:
                     self.plate_in = False
@@ -585,6 +585,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                             self.got_id = False
                             verified = False
                             PLATE_ID = None
+                            self.plateInput.clear()
+                            self.current_plate_id = self.plateInput.text()
 
                         else:
                             print("The plate number is not same as saved plate")
@@ -629,12 +631,15 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                         self.plate_in = False
                         self.got_id = False
                         PLATE_ID = None
+                        self.plateInput.clear()
+                        self.current_plate_id = self.plateInput.text()
 
                     else:
                         self.update_color_led_label('Verify', 'red')
                         # self.popup_msg('ID or Plate is wrong !!!')
                         print("[INFO] ID or Plate is wrong !!!")
                         PLATE_ID = None
+                        self.plateInput.clear()
 
                     self.update_tracking_plc_table()
 
