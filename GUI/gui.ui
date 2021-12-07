@@ -20,8 +20,8 @@
    <widget class="QGroupBox" name="groupBox">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>80</y>
+      <x>10</x>
+      <y>190</y>
       <width>640</width>
       <height>360</height>
      </rect>
@@ -55,188 +55,80 @@
    <widget class="QGroupBox" name="groupBox_2">
     <property name="geometry">
      <rect>
-      <x>30</x>
-      <y>559</y>
-      <width>1001</width>
-      <height>101</height>
+      <x>370</x>
+      <y>560</y>
+      <width>341</width>
+      <height>111</height>
      </rect>
     </property>
     <property name="title">
-     <string>ControlPanel</string>
+     <string>Kiểm tra thẻ</string>
     </property>
-    <widget class="QLabel" name="ledTrigger">
+    <widget class="QWidget" name="gridLayoutWidget">
      <property name="geometry">
       <rect>
        <x>10</x>
        <y>20</y>
-       <width>60</width>
-       <height>60</height>
+       <width>321</width>
+       <height>80</height>
       </rect>
      </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::Box</enum>
-     </property>
-     <property name="text">
-      <string>Trigger</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-    </widget>
-    <widget class="QLabel" name="id">
-     <property name="geometry">
-      <rect>
-       <x>120</x>
-       <y>30</y>
-       <width>111</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::Box</enum>
-     </property>
-     <property name="text">
-      <string>ID scan from ID card</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-    <widget class="QLabel" name="account">
-     <property name="geometry">
-      <rect>
-       <x>660</x>
-       <y>30</y>
-       <width>121</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::Box</enum>
-     </property>
-     <property name="text">
-      <string>Money left in account</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
-    <widget class="Line" name="line">
-     <property name="geometry">
-      <rect>
-       <x>620</x>
-       <y>20</y>
-       <width>3</width>
-       <height>61</height>
-      </rect>
-     </property>
-     <property name="orientation">
-      <enum>Qt::Vertical</enum>
-     </property>
-    </widget>
-    <widget class="QLCDNumber" name="MoneyLeft">
-     <property name="geometry">
-      <rect>
-       <x>800</x>
-       <y>30</y>
-       <width>191</width>
-       <height>41</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="InputID">
-     <property name="geometry">
-      <rect>
-       <x>250</x>
-       <y>30</y>
-       <width>331</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>Segoe UI</family>
-       <pointsize>18</pointsize>
-       <weight>50</weight>
-       <bold>false</bold>
-      </font>
-     </property>
-     <property name="cursor">
-      <cursorShape>IBeamCursor</cursorShape>
-     </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="clearButtonEnabled">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QGroupBox" name="groupBox_3">
-    <property name="geometry">
-     <rect>
-      <x>670</x>
-      <y>0</y>
-      <width>351</width>
-      <height>71</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>GroupBox</string>
-    </property>
-    <widget class="QLabel" name="label_2">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>10</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Count</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_3">
-     <property name="geometry">
-      <rect>
-       <x>180</x>
-       <y>10</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Max</string>
-     </property>
-    </widget>
-    <widget class="QWidget" name="horizontalLayoutWidget">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>30</y>
-       <width>331</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QLCDNumber" name="SlotCount"/>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="1" column="0">
+       <widget class="QLabel" name="account">
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Box</enum>
+        </property>
+        <property name="text">
+         <string>Tiền còn lại trong thẻ</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
       </item>
-      <item>
-       <widget class="QLCDNumber" name="TotalSlot"/>
+      <item row="0" column="0">
+       <widget class="QLabel" name="id">
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Box</enum>
+        </property>
+        <property name="text">
+         <string>Mã thẻ quét được</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="InputID">
+        <property name="font">
+         <font>
+          <family>Segoe UI</family>
+          <pointsize>18</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>IBeamCursor</cursorShape>
+        </property>
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLCDNumber" name="MoneyLeft"/>
       </item>
      </layout>
     </widget>
@@ -244,37 +136,15 @@
    <widget class="QGroupBox" name="groupBox_4">
     <property name="geometry">
      <rect>
-      <x>670</x>
-      <y>450</y>
+      <x>5</x>
+      <y>560</y>
       <width>361</width>
       <height>111</height>
      </rect>
     </property>
     <property name="title">
-     <string>Plate number</string>
+     <string>Kiểm tra biển số xe</string>
     </property>
-    <widget class="QLabel" name="extractedInfo">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>20</y>
-       <width>251</width>
-       <height>41</height>
-      </rect>
-     </property>
-     <property name="autoFillBackground">
-      <bool>true</bool>
-     </property>
-     <property name="frameShape">
-      <enum>QFrame::Box</enum>
-     </property>
-     <property name="text">
-      <string>Plate number</string>
-     </property>
-     <property name="alignment">
-      <set>Qt::AlignCenter</set>
-     </property>
-    </widget>
     <widget class="QLabel" name="VerifyBox">
      <property name="geometry">
       <rect>
@@ -297,22 +167,12 @@
       <set>Qt::AlignCenter</set>
      </property>
     </widget>
-    <widget class="QLineEdit" name="plateInput">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>69</y>
-       <width>251</width>
-       <height>31</height>
-      </rect>
-     </property>
-    </widget>
     <widget class="QPushButton" name="confirmButton">
      <property name="geometry">
       <rect>
        <x>270</x>
        <y>70</y>
-       <width>75</width>
+       <width>81</width>
        <height>31</height>
       </rect>
      </property>
@@ -320,14 +180,136 @@
       <string>Enter</string>
      </property>
     </widget>
+    <widget class="QWidget" name="horizontalLayoutWidget_3">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>20</y>
+       <width>261</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Box</enum>
+        </property>
+        <property name="text">
+         <string>Biển số quét được</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="extractedInfo">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Box</enum>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+    <widget class="QWidget" name="horizontalLayoutWidget_4">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>70</y>
+       <width>261</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <item>
+       <widget class="QLabel" name="label_6">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="frameShape">
+         <enum>QFrame::Box</enum>
+        </property>
+        <property name="text">
+         <string>Biển số nhập</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="plateInput">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+         </font>
+        </property>
+        <property name="autoFillBackground">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
    </widget>
    <widget class="QTableWidget" name="tableWidget">
     <property name="geometry">
      <rect>
-      <x>1050</x>
-      <y>40</y>
-      <width>221</width>
-      <height>621</height>
+      <x>1020</x>
+      <y>150</y>
+      <width>251</width>
+      <height>171</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -342,6 +324,9 @@
     <property name="autoFillBackground">
      <bool>true</bool>
     </property>
+    <property name="verticalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
     <property name="sizeAdjustPolicy">
      <enum>QAbstractScrollArea::AdjustIgnored</enum>
     </property>
@@ -355,7 +340,7 @@
      <bool>true</bool>
     </property>
     <property name="rowCount">
-     <number>20</number>
+     <number>5</number>
     </property>
     <attribute name="horizontalHeaderCascadingSectionResizes">
      <bool>false</bool>
@@ -377,6 +362,9 @@
     </attribute>
     <attribute name="verticalHeaderCascadingSectionResizes">
      <bool>false</bool>
+    </attribute>
+    <attribute name="verticalHeaderMinimumSectionSize">
+     <number>25</number>
     </attribute>
     <attribute name="verticalHeaderDefaultSectionSize">
      <number>30</number>
@@ -409,88 +397,58 @@
       <string>5</string>
      </property>
     </row>
-    <row>
-     <property name="text">
-      <string>6</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>7</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>8</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>9</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>10</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>11</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>12</string>
-     </property>
-    </row>
-    <row>
-     <property name="text">
-      <string>13</string>
-     </property>
-    </row>
-    <row/>
-    <row/>
-    <row/>
-    <row/>
-    <row/>
-    <row/>
-    <row/>
     <column>
      <property name="text">
-      <string>Item</string>
+      <string>Tên biến</string>
      </property>
     </column>
     <column>
      <property name="text">
-      <string>Value</string>
+      <string>Giá trị</string>
      </property>
     </column>
    </widget>
-   <widget class="QLabel" name="label_4">
+   <widget class="QLabel" name="PLC_label">
     <property name="geometry">
      <rect>
-      <x>1070</x>
-      <y>10</y>
+      <x>1060</x>
+      <y>110</y>
       <width>181</width>
-      <height>21</height>
+      <height>31</height>
      </rect>
     </property>
+    <property name="font">
+     <font>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
     <property name="text">
-     <string>PLC tracking value</string>
+     <string>Kết nối PLC</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
     </property>
    </widget>
    <widget class="QLabel" name="label_5">
     <property name="geometry">
      <rect>
-      <x>50</x>
+      <x>170</x>
       <y>10</y>
-      <width>571</width>
-      <height>51</height>
+      <width>481</width>
+      <height>151</height>
      </rect>
     </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
     <property name="text">
-     <string>License Plate recognition for smart parking station</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Ngô Quang Luân- MSV: 17814140122&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Mai Văn Thịnh - MSV:1781410132&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Giáo viên hướng dẫn: TS.Nguyễn Thị Điệp&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Lớp: CLC.D12CNTD&lt;/span&gt;&lt;/p&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt;&quot;&gt;Khoa:  Khoa Điều khiển và Tự động hóa&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
@@ -499,8 +457,8 @@
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>670</x>
-      <y>80</y>
+      <x>650</x>
+      <y>190</y>
       <width>361</width>
       <height>361</height>
      </rect>
@@ -558,10 +516,10 @@
    <widget class="QWidget" name="horizontalLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>450</y>
-      <width>591</width>
-      <height>91</height>
+      <x>720</x>
+      <y>570</y>
+      <width>291</width>
+      <height>51</height>
      </rect>
     </property>
     <layout class="QHBoxLayout" name="ControlLayout">
@@ -595,6 +553,268 @@
       </widget>
      </item>
     </layout>
+   </widget>
+   <widget class="QLabel" name="label_3">
+    <property name="geometry">
+     <rect>
+      <x>1150</x>
+      <y>20</y>
+      <width>21</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Max</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="horizontalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>1030</x>
+      <y>40</y>
+      <width>231</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QLCDNumber" name="SlotCount"/>
+     </item>
+     <item>
+      <widget class="QLCDNumber" name="TotalSlot"/>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>1030</x>
+      <y>20</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Số xe hiện tại</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="ledTrigger">
+    <property name="geometry">
+     <rect>
+      <x>720</x>
+      <y>630</y>
+      <width>291</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="text">
+     <string>Đang xử lý xe vào, ra</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="tableWidget_2">
+    <property name="geometry">
+     <rect>
+      <x>1020</x>
+      <y>380</y>
+      <width>251</width>
+      <height>291</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
+    <property name="verticalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
+    <property name="horizontalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
+    <property name="sizeAdjustPolicy">
+     <enum>QAbstractScrollArea::AdjustToContentsOnFirstShow</enum>
+    </property>
+    <property name="alternatingRowColors">
+     <bool>true</bool>
+    </property>
+    <property name="gridStyle">
+     <enum>Qt::SolidLine</enum>
+    </property>
+    <property name="sortingEnabled">
+     <bool>true</bool>
+    </property>
+    <attribute name="horizontalHeaderCascadingSectionResizes">
+     <bool>true</bool>
+    </attribute>
+    <attribute name="horizontalHeaderMinimumSectionSize">
+     <number>20</number>
+    </attribute>
+    <attribute name="horizontalHeaderDefaultSectionSize">
+     <number>70</number>
+    </attribute>
+    <attribute name="horizontalHeaderStretchLastSection">
+     <bool>true</bool>
+    </attribute>
+    <attribute name="verticalHeaderCascadingSectionResizes">
+     <bool>false</bool>
+    </attribute>
+    <attribute name="verticalHeaderStretchLastSection">
+     <bool>false</bool>
+    </attribute>
+    <row>
+     <property name="text">
+      <string>1</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>2</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>3</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>4</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>5</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>6</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>7</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>8</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>9</string>
+     </property>
+    </row>
+    <column>
+     <property name="text">
+      <string>Vị trí</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Mã thẻ</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Biển số xe</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>1050</x>
+      <y>330</y>
+      <width>201</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>11</pointsize>
+     </font>
+    </property>
+    <property name="autoFillBackground">
+     <bool>true</bool>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Box</enum>
+    </property>
+    <property name="text">
+     <string>Bảng quản lý xe trong bãi</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_7">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>161</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Panel</enum>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>EPUlogo.png</pixmap>
+    </property>
+    <property name="scaledContents">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_8">
+    <property name="geometry">
+     <rect>
+      <x>650</x>
+      <y>10</y>
+      <width>361</width>
+      <height>151</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::StyledPanel</enum>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Đề tài:&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:11pt; font-weight:600;&quot;&gt;Nghiên cứu thiết kế mô hình bãi đỗ xe tự động&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox_3">
+    <property name="geometry">
+     <rect>
+      <x>5</x>
+      <y>170</y>
+      <width>1011</width>
+      <height>391</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>Nhận diện biển số</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

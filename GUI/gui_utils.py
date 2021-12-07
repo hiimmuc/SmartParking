@@ -91,7 +91,14 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         # check rs485
         self.rs485_pipe.check_connection()
         self.rs485_connected = self.rs485_pipe.connected_to_plc
+
+        if self.rs485_connected:
+            self.update_color_led_label('PLC_connect', 'green')
+        else:
+            self.update_color_led_label('PLC_connect', 'red')
+
         self.update_tracking_plc_table()
+        self.update_tracking_slots_table()
 
         # run video`
         self.thread.start()
@@ -197,6 +204,29 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                         self.processing_flag = bool(values)
             else:
                 self.popup_msg("Com is not connect", src_msg='update_tracking_table', type_msg='warning')
+        except Exception as e:
+            self.popup_msg(str(e), src_msg='update_tracking_table')
+
+    def update_tracking_slots_table(self, slot_num=0):
+        """Read data from PLC and update the tracking table widget in UI widget.
+        """
+        try:
+
+            table_name = 'database'
+            table = self.tableWidget
+            # read value from plc and update tracking values
+            for i, idx in enumerate(self.table[table_name]['Index']):
+                # Index, ID, plate_id, plate_path
+
+                ID = self.table[table_name]['ID'][i]
+                plate_id = self.table[table_name]['plate_id'][i]
+
+                if i < slot_num:
+                    table.setItem(i, 0, QTableWidgetItem(f"{idx + 1}"))
+                # table.setItem(i, 1, QTableWidgetItem(f"{name}"))
+                table.setItem(i, 2, QTableWidgetItem(f"{ID}"))
+                table.setItem(i, 3, QTableWidgetItem(f"{plate_id}"))
+
         except Exception as e:
             self.popup_msg(str(e), src_msg='update_tracking_table')
 
@@ -379,6 +409,8 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
             self.ledTrigger.setStyleSheet(f"background-color: {color}")
         elif label == 'Verify':
             self.VerifyBox.setStyleSheet(f"background-color: {color}")
+        elif label == 'PLC_connect':
+            self.PLC_label.setStyleSheet(f"background-color: {color}")
 
     def delay(self, seconds):
         '''delay'''
@@ -461,6 +493,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
         plate_exist = False
         saved_plate_id = None
         current_money = 0
+        slot_now = 0
 
         ID = self.get_id_input()
 
@@ -509,9 +542,6 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                         self.plate_in = True
                         plate_ids = PLATE_ID
                         print(f'[INFO] plate_ids: {PLATE_ID}')
-                        # self.plateInput.clear()
-                        # self.current_plate_id = self.plateInput.text()
-
                 else:
                     self.plate_in = False
 
@@ -545,6 +575,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
 
                 # * if vehicle come into camera view and plate is detected
                 if self.plate_in and self.got_id:
+
                     if id_exist and plate_exist:
                         if verified:
                             print("[INFO] Xe di ra khoi khu vuc")
@@ -603,8 +634,6 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                         # * 2. update led label verify -> red
                         self.update_color_led_label('Verify', 'yellow')
 
-                        self.update_color_led_label('ledTrigger', 'green')
-
                         # * 3. update label extractedInfo to plate id
                         self.update_label('extractedInfo', f'{plate_ids}')
 
@@ -642,6 +671,7 @@ class App(Ui_MainWindow, VideoThread, QtWidgets.QWidget):
                         self.plateInput.clear()
 
                     self.update_tracking_plc_table()
+                    self.update_tracking_slots_table(slot_num=slot_now)
 
                 self.update_color_led_label('ledTrigger', 'yellow')
 

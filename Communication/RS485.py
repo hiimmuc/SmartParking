@@ -20,7 +20,16 @@ class RS485:
             if not plc.is_connected():
                 plc.connect()
 
-            self.connected_to_plc = True
+            try:
+                # test truyen nhan du lieu
+                plc.write_single_coil(13, 1)
+                self.connected_to_plc = (1 == int(plc.read_coils(0, 1)[0]))
+                plc.write_single_register(13, 1)
+                self.connected_to_plc = (1 == int(plc.read_holding_registers(0, 1)[0]))
+                # self.connected_to_plc = True
+            except Exception as e:
+                print(e)
+                self.connected_to_plc = False
 
             plc.close()
 
@@ -90,7 +99,7 @@ class RS485:
 
             plc.close()
 
-            return results[0]
+            return int(results[0])
 
         except Exception as e:
             print(e)
